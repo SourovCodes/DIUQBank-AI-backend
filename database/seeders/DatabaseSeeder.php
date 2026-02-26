@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Department;
+use App\Models\ExamType;
+use App\Models\Semester;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -15,11 +18,17 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        Department::factory()
+            ->count(5)
+            ->hasCourses(6)
+            ->create();
+
+        Semester::factory()->count(8)->create();
+        ExamType::factory()->count(5)->create();
     }
 }
