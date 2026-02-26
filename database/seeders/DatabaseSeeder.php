@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Course;
 use App\Models\Department;
 use App\Models\ExamType;
+use App\Models\Question;
 use App\Models\Semester;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -30,5 +32,22 @@ class DatabaseSeeder extends Seeder
 
         Semester::factory()->count(8)->create();
         ExamType::factory()->count(5)->create();
+
+        $semesters = Semester::query()->pluck('id')->values();
+        $examTypes = ExamType::query()->pluck('id')->values();
+
+        Course::query()
+            ->select(['id', 'department_id'])
+            ->orderBy('id')
+            ->get()
+            ->values()
+            ->each(function (Course $course, int $index) use ($semesters, $examTypes): void {
+                Question::factory()->create([
+                    'department_id' => $course->department_id,
+                    'course_id' => $course->id,
+                    'semester_id' => $semesters[$index % $semesters->count()],
+                    'exam_type_id' => $examTypes[$index % $examTypes->count()],
+                ]);
+            });
     }
 }
