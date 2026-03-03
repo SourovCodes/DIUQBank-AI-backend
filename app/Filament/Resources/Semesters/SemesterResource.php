@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Semesters;
 use App\Filament\Resources\Semesters\Pages\CreateSemester;
 use App\Filament\Resources\Semesters\Pages\EditSemester;
 use App\Filament\Resources\Semesters\Pages\ListSemesters;
+use App\Filament\Resources\Semesters\RelationManagers\QuestionsRelationManager;
 use App\Filament\Resources\Semesters\Schemas\SemesterForm;
 use App\Filament\Resources\Semesters\Tables\SemestersTable;
 use App\Models\Semester;
@@ -36,7 +37,7 @@ class SemesterResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            'questions' => QuestionsRelationManager::class,
         ];
     }
 

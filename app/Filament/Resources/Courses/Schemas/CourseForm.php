@@ -25,6 +25,7 @@ class CourseForm
                             ->relationship('department', 'name')
                             ->searchable()
                             ->preload()
+                            ->default(fn () => request()->query('department_id'))
                             ->required(),
                         TextInput::make('name')
                             ->label('Course name')

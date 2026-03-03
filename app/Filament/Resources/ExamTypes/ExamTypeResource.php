@@ -5,6 +5,7 @@ namespace App\Filament\Resources\ExamTypes;
 use App\Filament\Resources\ExamTypes\Pages\CreateExamType;
 use App\Filament\Resources\ExamTypes\Pages\EditExamType;
 use App\Filament\Resources\ExamTypes\Pages\ListExamTypes;
+use App\Filament\Resources\ExamTypes\RelationManagers\QuestionsRelationManager;
 use App\Filament\Resources\ExamTypes\Schemas\ExamTypeForm;
 use App\Filament\Resources\ExamTypes\Tables\ExamTypesTable;
 use App\Models\ExamType;
@@ -36,7 +37,7 @@ class ExamTypeResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            'questions' => QuestionsRelationManager::class,
         ];
     }
 
