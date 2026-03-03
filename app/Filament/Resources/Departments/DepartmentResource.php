@@ -12,6 +12,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class DepartmentResource extends Resource
@@ -48,7 +49,14 @@ class DepartmentResource extends Resource
     {
         return [
             'Short name' => $record->short_name,
+            'Courses' => (string) $record->courses_count,
+            'Questions' => (string) $record->questions_count,
         ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->withCount(['courses', 'questions']);
     }
 
     public static function getPages(): array

@@ -49,12 +49,15 @@ class CourseResource extends Resource
     {
         return [
             'Department' => $record->department?->name,
+            'Questions' => (string) $record->questions_count,
         ];
     }
 
     public static function getGlobalSearchEloquentQuery(): Builder
     {
-        return parent::getGlobalSearchEloquentQuery()->with(['department']);
+        return parent::getGlobalSearchEloquentQuery()
+            ->with(['department'])
+            ->withCount(['questions']);
     }
 
     public static function getPages(): array

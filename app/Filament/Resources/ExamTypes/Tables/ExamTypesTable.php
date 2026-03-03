@@ -20,6 +20,10 @@ class ExamTypesTable
                     ->searchable()
                     ->sortable()
                     ->weight('medium'),
+                TextColumn::make('questions_count')
+                    ->label('Questions')
+                    ->counts('questions')
+                    ->sortable(),
                 IconColumn::make('requires_section')
                     ->label('Requires section')
                     ->boolean(),

@@ -12,6 +12,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class SemesterResource extends Resource
@@ -48,7 +49,13 @@ class SemesterResource extends Resource
     {
         return [
             'Name' => $record->name,
+            'Questions' => (string) $record->questions_count,
         ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->withCount(['questions']);
     }
 
     public static function getPages(): array

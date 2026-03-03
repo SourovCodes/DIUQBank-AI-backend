@@ -23,6 +23,14 @@ class DepartmentsTable
                     ->searchable()
                     ->sortable()
                     ->copyable(),
+                TextColumn::make('courses_count')
+                    ->label('Courses')
+                    ->counts('courses')
+                    ->sortable(),
+                TextColumn::make('questions_count')
+                    ->label('Questions')
+                    ->counts('questions')
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

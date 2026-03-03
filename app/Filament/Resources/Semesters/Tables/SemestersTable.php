@@ -18,6 +18,10 @@ class SemestersTable
                     ->searchable()
                     ->sortable()
                     ->weight('medium'),
+                TextColumn::make('questions_count')
+                    ->label('Questions')
+                    ->counts('questions')
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
