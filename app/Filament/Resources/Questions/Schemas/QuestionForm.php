@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\Question;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -62,6 +63,12 @@ class QuestionForm
                                 ->where('course_id', $get('course_id'))
                                 ->where('semester_id', $get('semester_id'))
                                 ->ignore($record)),
+                        TextInput::make('views')
+                            ->label('Views')
+                            ->numeric()
+                            ->default(0)
+                            ->minValue(0)
+                            ->required(),
                     ]),
                 Section::make('Timestamps')
                     ->columnSpanFull()

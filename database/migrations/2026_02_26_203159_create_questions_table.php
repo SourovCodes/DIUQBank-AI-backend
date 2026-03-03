@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('course_id')->constrained();
             $table->foreignId('semester_id')->constrained();
             $table->foreignId('exam_type_id')->constrained();
+            $table->unsignedInteger('views')->default(0);
             $table->timestamps();
 
             $table->unique(['department_id', 'course_id', 'semester_id', 'exam_type_id'], 'questions_unique_combination');

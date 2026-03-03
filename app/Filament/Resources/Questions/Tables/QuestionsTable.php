@@ -36,6 +36,10 @@ class QuestionsTable
                     ->searchable()
                     ->sortable()
                     ->weight('medium'),
+                TextColumn::make('views')
+                    ->label('Views')
+                    ->numeric()
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

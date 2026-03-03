@@ -25,6 +25,7 @@ class QuestionFactory extends Factory
             'course_id' => Course::factory(),
             'semester_id' => Semester::factory(),
             'exam_type_id' => ExamType::factory(),
+            'views' => fake()->numberBetween(0, 1000),
         ];
     }
 }

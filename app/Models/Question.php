@@ -18,7 +18,18 @@ class Question extends Model
         'course_id',
         'semester_id',
         'exam_type_id',
+        'views',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'views' => 'integer',
+        ];
+    }
 
     public function department(): BelongsTo
     {
