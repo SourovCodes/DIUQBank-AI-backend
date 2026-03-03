@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Questions\Tables;
 
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
@@ -71,6 +72,7 @@ class QuestionsTable
             ->emptyStateDescription('Create your first question mapping with department, course, semester, and exam type.')
             ->recordActions([
                 EditAction::make(),
+                DeleteAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Courses\Tables;
 
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
@@ -49,6 +50,7 @@ class CoursesTable
             ->emptyStateDescription('Create your first course and assign it to a department.')
             ->recordActions([
                 EditAction::make(),
+                DeleteAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
