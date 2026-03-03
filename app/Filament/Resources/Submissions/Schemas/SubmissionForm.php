@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Submissions\Schemas;
 
+use App\Models\Question;
 use App\Models\Submission;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
@@ -10,6 +11,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
@@ -33,7 +35,38 @@ class SubmissionForm
                             ->required(),
                         Select::make('question_id')
                             ->label('Question')
-                            ->relationship('question', 'id')
+                            ->relationship(
+                                'question',
+                                'id',
+                                fn (Builder $query): Builder => $query->with([
+                                    'department:id,short_name',
+                                    'course:id,name',
+                                    'semester:id,name',
+                                    'examType:id,name',
+                                ])
+                            )
+                            ->getOptionLabelFromRecordUsing(fn (Question $record): string => self::formatQuestionLabel($record))
+                            ->getSearchResultsUsing(function (string $search): array {
+                                return Question::query()
+                                    ->with([
+                                        'department:id,short_name',
+                                        'course:id,name',
+                                        'semester:id,name',
+                                        'examType:id,name',
+                                    ])
+                                    ->where(function (Builder $query) use ($search): void {
+                                        $query
+                                            ->where('id', 'like', "%{$search}%")
+                                            ->orWhereHas('department', fn (Builder $departmentQuery): Builder => $departmentQuery->where('short_name', 'like', "%{$search}%"))
+                                            ->orWhereHas('course', fn (Builder $courseQuery): Builder => $courseQuery->where('name', 'like', "%{$search}%"))
+                                            ->orWhereHas('semester', fn (Builder $semesterQuery): Builder => $semesterQuery->where('name', 'like', "%{$search}%"))
+                                            ->orWhereHas('examType', fn (Builder $examTypeQuery): Builder => $examTypeQuery->where('name', 'like', "%{$search}%"));
+                                    })
+                                    ->limit(50)
+                                    ->get()
+                                    ->mapWithKeys(fn (Question $question): array => [$question->id => self::formatQuestionLabel($question)])
+                                    ->all();
+                            })
                             ->searchable()
                             ->preload()
                             ->default(fn () => request()->query('question_id'))
@@ -94,5 +127,17 @@ class SubmissionForm
                             }),
                     ]),
             ]);
+    }
+
+    private static function formatQuestionLabel(Question $question): string
+    {
+        return sprintf(
+            '%s - %s | %s | %s | Q#%d',
+            $question->department?->short_name ?? 'N/A',
+            $question->course?->name ?? 'N/A',
+            $question->semester?->name ?? 'N/A',
+            $question->examType?->name ?? 'N/A',
+            $question->id,
+        );
     }
 }
