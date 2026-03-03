@@ -16,7 +16,7 @@ class SemesterFactory extends Factory
      */
     public function definition(): array
     {
-        $semesterNumber = fake()->numberBetween(1, 8);
+        $semesterNumber = fake()->unique()->numberBetween(1, 8);
 
         return [
             'name' => "Semester {$semesterNumber}",
