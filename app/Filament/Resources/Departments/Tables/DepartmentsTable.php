@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Departments\Tables;
 
+use App\Filament\Support\DeleteDependencyGuard;
+use App\Models\Department;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -49,11 +51,30 @@ class DepartmentsTable
             ->emptyStateDescription('Create your first department to organize courses and questions.')
             ->recordActions([
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->before(function (DeleteAction $action, Department $record): void {
+                        if (! $record->hasDeletionDependencies()) {
+                            return;
+                        }
+
+                        DeleteDependencyGuard::cancelSingle($action, 'department', 'courses and questions');
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->accessSelectedRecords()
+                        ->before(function (DeleteBulkAction $action): void {
+                            $blockedCount = $action->getSelectedRecordsQuery()
+                                ->hasDeletionDependencies()
+                                ->count();
+
+                            if ($blockedCount === 0) {
+                                return;
+                            }
+
+                            DeleteDependencyGuard::cancelBulk($action, 'departments', 'courses and questions');
+                        }),
                 ]),
             ]);
     }

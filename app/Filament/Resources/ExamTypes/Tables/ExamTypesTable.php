@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\ExamTypes\Tables;
 
+use App\Filament\Support\DeleteDependencyGuard;
+use App\Models\ExamType;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -46,11 +48,30 @@ class ExamTypesTable
             ->emptyStateDescription('Create your first exam type to classify questions.')
             ->recordActions([
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->before(function (DeleteAction $action, ExamType $record): void {
+                        if (! $record->hasDeletionDependencies()) {
+                            return;
+                        }
+
+                        DeleteDependencyGuard::cancelSingle($action, 'exam type', 'questions');
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->accessSelectedRecords()
+                        ->before(function (DeleteBulkAction $action): void {
+                            $blockedCount = $action->getSelectedRecordsQuery()
+                                ->hasDeletionDependencies()
+                                ->count();
+
+                            if ($blockedCount === 0) {
+                                return;
+                            }
+
+                            DeleteDependencyGuard::cancelBulk($action, 'exam types', 'questions');
+                        }),
                 ]),
             ]);
     }

@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Semesters\Tables;
 
+use App\Filament\Support\DeleteDependencyGuard;
+use App\Models\Semester;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -40,11 +42,30 @@ class SemestersTable
             ->emptyStateDescription('Create your first semester to organize questions.')
             ->recordActions([
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->before(function (DeleteAction $action, Semester $record): void {
+                        if (! $record->hasDeletionDependencies()) {
+                            return;
+                        }
+
+                        DeleteDependencyGuard::cancelSingle($action, 'semester', 'questions');
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->accessSelectedRecords()
+                        ->before(function (DeleteBulkAction $action): void {
+                            $blockedCount = $action->getSelectedRecordsQuery()
+                                ->hasDeletionDependencies()
+                                ->count();
+
+                            if ($blockedCount === 0) {
+                                return;
+                            }
+
+                            DeleteDependencyGuard::cancelBulk($action, 'semesters', 'questions');
+                        }),
                 ]),
             ]);
     }
