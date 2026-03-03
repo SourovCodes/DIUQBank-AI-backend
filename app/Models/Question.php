@@ -56,4 +56,16 @@ class Question extends Model
     {
         return $this->hasMany(Submission::class);
     }
+
+    public function getSubmissionDisplayLabel(): string
+    {
+        return sprintf(
+            '%s - %s | %s | %s | Q#%d',
+            $this->department?->short_name ?? 'N/A',
+            $this->course?->name ?? 'N/A',
+            $this->semester?->name ?? 'N/A',
+            $this->examType?->name ?? 'N/A',
+            $this->id,
+        );
+    }
 }

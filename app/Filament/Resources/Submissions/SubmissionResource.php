@@ -60,7 +60,7 @@ class SubmissionResource extends Resource
     {
         return [
             'Uploader' => $record->uploader?->name,
-            'Question' => $record->question?->id,
+            'Question' => $record->question?->getSubmissionDisplayLabel(),
             'Section' => $record->section,
             'Batch' => $record->batch,
         ];
@@ -70,7 +70,10 @@ class SubmissionResource extends Resource
     {
         return parent::getGlobalSearchEloquentQuery()->with([
             'uploader',
-            'question',
+            'question.department',
+            'question.course',
+            'question.semester',
+            'question.examType',
         ]);
     }
 

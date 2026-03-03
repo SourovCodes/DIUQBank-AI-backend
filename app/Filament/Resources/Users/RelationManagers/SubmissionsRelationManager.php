@@ -21,10 +21,16 @@ class SubmissionsRelationManager extends RelationManager
                 TextColumn::make('id')
                     ->label('#')
                     ->sortable(),
-                TextColumn::make('question.id')
-                    ->label('Question #')
-                    ->searchable()
-                    ->sortable(),
+                TextColumn::make('question_display')
+                    ->label('Question')
+                    ->state(fn (Model $record): string => $record->question?->getSubmissionDisplayLabel() ?? 'N/A')
+                    ->searchable([
+                        'question.id',
+                        'question.department.short_name',
+                        'question.course.name',
+                        'question.semester.name',
+                        'question.examType.name',
+                    ]),
                 TextColumn::make('section')
                     ->searchable()
                     ->toggleable(),

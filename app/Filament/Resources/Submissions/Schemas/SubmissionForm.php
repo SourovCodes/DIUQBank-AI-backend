@@ -45,7 +45,7 @@ class SubmissionForm
                                     'examType:id,name',
                                 ])
                             )
-                            ->getOptionLabelFromRecordUsing(fn (Question $record): string => self::formatQuestionLabel($record))
+                            ->getOptionLabelFromRecordUsing(fn (Question $record): string => $record->getSubmissionDisplayLabel())
                             ->getSearchResultsUsing(function (string $search): array {
                                 return Question::query()
                                     ->with([
@@ -64,7 +64,7 @@ class SubmissionForm
                                     })
                                     ->limit(50)
                                     ->get()
-                                    ->mapWithKeys(fn (Question $question): array => [$question->id => self::formatQuestionLabel($question)])
+                                    ->mapWithKeys(fn (Question $question): array => [$question->id => $question->getSubmissionDisplayLabel()])
                                     ->all();
                             })
                             ->searchable()
@@ -127,17 +127,5 @@ class SubmissionForm
                             }),
                     ]),
             ]);
-    }
-
-    private static function formatQuestionLabel(Question $question): string
-    {
-        return sprintf(
-            '%s - %s | %s | %s | Q#%d',
-            $question->department?->short_name ?? 'N/A',
-            $question->course?->name ?? 'N/A',
-            $question->semester?->name ?? 'N/A',
-            $question->examType?->name ?? 'N/A',
-            $question->id,
-        );
     }
 }

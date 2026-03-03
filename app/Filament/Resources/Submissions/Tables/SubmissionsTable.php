@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Submissions\Tables;
 
+use App\Models\Question;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -9,6 +10,7 @@ use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
@@ -26,10 +28,17 @@ class SubmissionsTable
                     ->label('Uploader')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('question.id')
-                    ->label('Question #')
-                    ->searchable()
-                    ->sortable(),
+                TextColumn::make('question_display')
+                    ->label('Question')
+                    ->state(fn ($record): string => $record->question?->getSubmissionDisplayLabel() ?? 'N/A')
+                    ->searchable([
+                        'question.id',
+                        'question.department.short_name',
+                        'question.course.name',
+                        'question.semester.name',
+                        'question.examType.name',
+                    ])
+                    ->toggleable(),
                 TextColumn::make('section')
                     ->searchable()
                     ->toggleable(),
@@ -74,7 +83,17 @@ class SubmissionsTable
                     ->preload(),
                 SelectFilter::make('question_id')
                     ->label('Question')
-                    ->relationship('question', 'id')
+                    ->relationship(
+                        'question',
+                        'id',
+                        fn (Builder $query): Builder => $query->with([
+                            'department:id,short_name',
+                            'course:id,name',
+                            'semester:id,name',
+                            'examType:id,name',
+                        ])
+                    )
+                    ->getOptionLabelFromRecordUsing(fn (Question $record): string => $record->getSubmissionDisplayLabel())
                     ->searchable()
                     ->preload(),
             ])
