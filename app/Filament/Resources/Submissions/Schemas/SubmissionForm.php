@@ -8,7 +8,11 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
+use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class SubmissionForm
 {
@@ -67,6 +71,27 @@ class SubmissionForm
                         Placeholder::make('updated_at_display')
                             ->label('Updated at')
                             ->content(fn (?Submission $record): string => $record?->updated_at?->toDayDateTimeString() ?? '—'),
+                    ]),
+                Section::make('PDF preview')
+                    ->columnSpanFull()
+                    ->visible(fn (?string $operation, ?Submission $record): bool => $operation === 'edit' && filled($record?->pdf_path))
+                    ->schema([
+                        View::make('filament.resources.submissions.components.pdf-viewer')
+                            ->columnSpanFull()
+                            ->viewData(function (?Submission $record): array {
+                                if (blank($record?->pdf_path)) {
+                                    return ['pdfUrl' => null];
+                                }
+
+                                /** @var FilesystemAdapter $disk */
+                                $disk = Storage::disk('s3');
+
+                                try {
+                                    return ['pdfUrl' => $disk->temporaryUrl($record->pdf_path, now()->addMinutes(10))];
+                                } catch (Throwable) {
+                                    return ['pdfUrl' => $disk->url($record->pdf_path)];
+                                }
+                            }),
                     ]),
             ]);
     }
