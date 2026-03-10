@@ -52,4 +52,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Submission::class);
     }
+
+    public function quickUploads(): HasMany
+    {
+        return $this->hasMany(QuickUpload::class);
+    }
+
+    public function reviewedQuickUploads(): HasMany
+    {
+        return $this->hasMany(QuickUpload::class, 'reviewer_id');
+    }
 }
