@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "897b6c494073823cc58c59201efdfc55",
+    "content-hash": "b599a196d1fd0813b448935a57f9d6a5",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -2235,16 +2235,16 @@
         },
         {
             "name": "laravel/ai",
-            "version": "v0.2.6",
+            "version": "v0.2.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/ai.git",
-                "reference": "17bd350a4f68d28a255bd704aaa6724790ed73ee"
+                "reference": "f1cbcca98d8a05e566ad670d289154b17b0da68a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/ai/zipball/17bd350a4f68d28a255bd704aaa6724790ed73ee",
-                "reference": "17bd350a4f68d28a255bd704aaa6724790ed73ee",
+                "url": "https://api.github.com/repos/laravel/ai/zipball/f1cbcca98d8a05e566ad670d289154b17b0da68a",
+                "reference": "f1cbcca98d8a05e566ad670d289154b17b0da68a",
                 "shasum": ""
             },
             "require": {
@@ -2297,7 +2297,7 @@
                 "issues": "https://github.com/laravel/ai/issues",
                 "source": "https://github.com/laravel/ai"
             },
-            "time": "2026-03-04T23:33:41+00:00"
+            "time": "2026-03-05T19:20:09+00:00"
         },
         {
             "name": "laravel/framework",
