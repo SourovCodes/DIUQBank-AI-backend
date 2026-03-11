@@ -22,7 +22,7 @@ it('creates a sanctum token for a google user', function () {
 
     Socialite::shouldReceive('buildProvider')->once()->andReturn($provider);
 
-    $response = $this->postJson('/api/auth/google', [
+    $response = $this->postJson('/api/v1/auth/google', [
         'token' => 'valid-google-id-token',
         'token_name' => 'nextjs-web',
     ]);
@@ -63,7 +63,7 @@ it('reuses an existing user for google auth', function () {
 
     Socialite::shouldReceive('buildProvider')->once()->andReturn($provider);
 
-    $response = $this->postJson('/api/auth/google', [
+    $response = $this->postJson('/api/v1/auth/google', [
         'token' => 'existing-google-id-token',
         'token_name' => 'flutter-app',
     ]);
@@ -87,7 +87,7 @@ it('returns a validation error for an invalid google token', function () {
 
     Socialite::shouldReceive('buildProvider')->once()->andReturn($provider);
 
-    $this->postJson('/api/auth/google', [
+    $this->postJson('/api/v1/auth/google', [
         'token' => 'invalid-token',
     ])
         ->assertUnprocessable()
@@ -101,7 +101,7 @@ it('logs out by revoking only the current sanctum token', function () {
     $otherToken = $user->createToken('flutter-app');
 
     $this->withToken($currentToken->plainTextToken)
-        ->postJson('/api/auth/logout')
+        ->postJson('/api/v1/auth/logout')
         ->assertOk()
         ->assertJson([
             'message' => 'Logged out successfully.',

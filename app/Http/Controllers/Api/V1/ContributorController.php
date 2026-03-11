@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\IndexContributorRequest;
-use App\Http\Resources\ContributorResource;
+use App\Http\Requests\Api\V1\IndexContributorRequest;
+use App\Http\Resources\Api\V1\ContributorResource;
 use App\Models\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 

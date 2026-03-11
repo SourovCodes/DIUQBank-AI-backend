@@ -51,7 +51,7 @@ test('it returns public filter options', function () {
         'exam_type_id' => $examType->id,
     ]);
 
-    $response = $this->getJson('/api/filter-options');
+    $response = $this->getJson('/api/v1/filter-options');
 
     $response
         ->assertSuccessful()

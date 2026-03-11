@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\IndexQuestionRequest;
-use App\Http\Resources\QuestionResource;
+use App\Http\Requests\Api\V1\IndexQuestionRequest;
+use App\Http\Resources\Api\V1\QuestionResource;
 use App\Models\Question;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\JsonResponse;

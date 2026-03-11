@@ -56,7 +56,7 @@ test('it returns paginated contributors ordered by submissions count', function 
         'views' => 5,
     ]);
 
-    $response = $this->getJson('/api/contributors?per_page=10');
+    $response = $this->getJson('/api/v1/contributors?per_page=10');
 
     $response
         ->assertSuccessful()
@@ -111,7 +111,7 @@ test('it returns a contributor summary without submissions', function () {
         'pdf_path' => 'submissions/networks-final.pdf',
     ]);
 
-    $response = $this->getJson('/api/contributors/'.$contributor->id);
+    $response = $this->getJson('/api/v1/contributors/'.$contributor->id);
 
     $response
         ->assertSuccessful()
@@ -128,11 +128,11 @@ test('it returns a contributor summary without submissions', function () {
 test('it returns not found for a user without submissions', function () {
     $user = User::factory()->create();
 
-    $this->getJson('/api/contributors/'.$user->id)->assertNotFound();
+    $this->getJson('/api/v1/contributors/'.$user->id)->assertNotFound();
 });
 
 test('it validates contributor pagination input', function () {
-    $response = $this->getJson('/api/contributors?per_page=0');
+    $response = $this->getJson('/api/v1/contributors?per_page=0');
 
     $response
         ->assertUnprocessable()

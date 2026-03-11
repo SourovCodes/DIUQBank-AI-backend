@@ -37,7 +37,7 @@ it('returns a presigned upload target without creating a quick upload record', f
             ],
         ]);
 
-    $response = $this->postJson('/api/quick-uploads/upload-url', [
+    $response = $this->postJson('/api/v1/quick-uploads/upload-url', [
         'file_name' => 'midterm.pdf',
         'content_type' => 'application/pdf',
         'file_size' => 2048,
@@ -56,7 +56,7 @@ it('returns a presigned upload target without creating a quick upload record', f
 });
 
 it('requires authentication to request a quick upload url', function () {
-    $this->postJson('/api/quick-uploads/upload-url', [
+    $this->postJson('/api/v1/quick-uploads/upload-url', [
         'file_name' => 'midterm.pdf',
         'content_type' => 'application/pdf',
         'file_size' => 2048,
@@ -66,7 +66,7 @@ it('requires authentication to request a quick upload url', function () {
 it('validates that quick upload url requests are pdf files within the allowed size', function () {
     Sanctum::actingAs(User::factory()->create());
 
-    $this->postJson('/api/quick-uploads/upload-url', [
+    $this->postJson('/api/v1/quick-uploads/upload-url', [
         'file_name' => 'midterm.png',
         'content_type' => 'image/png',
         'file_size' => 10485761,
@@ -93,7 +93,7 @@ it('creates a quick upload after confirming the uploaded file exists on s3', fun
         ->with('quick-uploads/'.$user->id.'/completed-upload.pdf')
         ->andReturn(true);
 
-    $response = $this->postJson('/api/quick-uploads', [
+    $response = $this->postJson('/api/v1/quick-uploads', [
         'pdf_path' => 'quick-uploads/'.$user->id.'/completed-upload.pdf',
     ]);
 
@@ -123,7 +123,7 @@ it('rejects quick upload finalization when the file does not exist on s3', funct
         ->with('quick-uploads/'.$user->id.'/missing-upload.pdf')
         ->andReturn(false);
 
-    $this->postJson('/api/quick-uploads', [
+    $this->postJson('/api/v1/quick-uploads', [
         'pdf_path' => 'quick-uploads/'.$user->id.'/missing-upload.pdf',
     ])
         ->assertUnprocessable()

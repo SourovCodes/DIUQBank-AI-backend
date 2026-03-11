@@ -60,7 +60,7 @@ test('it returns paginated questions filtered by the provided filters', function
         'user_id' => $otherUser->id,
     ]);
 
-    $response = $this->getJson('/api/questions?department_id='.$department->id.'&course_id='.$course->id.'&semester_id='.$semester->id.'&exam_type_id='.$examType->id.'&user_id='.$user->id.'&per_page=5');
+    $response = $this->getJson('/api/v1/questions?department_id='.$department->id.'&course_id='.$course->id.'&semester_id='.$semester->id.'&exam_type_id='.$examType->id.'&user_id='.$user->id.'&per_page=5');
 
     $response
         ->assertSuccessful()
@@ -107,7 +107,7 @@ test('it returns a question with its submissions on show', function () {
         'views' => 7,
     ]);
 
-    $response = $this->getJson('/api/questions/'.$question->id);
+    $response = $this->getJson('/api/v1/questions/'.$question->id);
 
     $response
         ->assertSuccessful()
@@ -130,7 +130,7 @@ test('it increments a questions view count', function () {
         'views' => 3,
     ]);
 
-    $response = $this->postJson('/api/questions/'.$question->id.'/views');
+    $response = $this->postJson('/api/v1/questions/'.$question->id.'/views');
 
     $response
         ->assertSuccessful()
@@ -145,7 +145,7 @@ test('it increments a submissions view count', function () {
         'views' => 9,
     ]);
 
-    $response = $this->postJson('/api/submissions/'.$submission->id.'/views');
+    $response = $this->postJson('/api/v1/submissions/'.$submission->id.'/views');
 
     $response
         ->assertSuccessful()
@@ -157,7 +157,7 @@ test('it increments a submissions view count', function () {
 });
 
 test('it validates question filters', function () {
-    $response = $this->getJson('/api/questions?department_id=999999&per_page=0');
+    $response = $this->getJson('/api/v1/questions?department_id=999999&per_page=0');
 
     $response
         ->assertUnprocessable()
