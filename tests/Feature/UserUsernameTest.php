@@ -24,3 +24,14 @@ test('users persist the provided username', function () {
         'username' => 'taylor_otwell',
     ]);
 });
+
+test('users persist the provided avatar', function () {
+    $user = User::factory()->create([
+        'avatar' => 'avatars/taylor.png',
+    ]);
+
+    $this->assertDatabaseHas('users', [
+        'id' => $user->id,
+        'avatar' => 'avatars/taylor.png',
+    ]);
+});

@@ -41,6 +41,11 @@ class GoogleAuthController extends Controller
 
         $user->name = $this->resolveName($googleUser, $email);
         $user->username ??= $this->generateUniqueUsername($email, $user->getKey());
+
+        if (($avatar = $this->resolveAvatar($googleUser)) !== null) {
+            $user->avatar = $avatar;
+        }
+
         $user->email_verified_at ??= now();
 
         if (! $user->exists) {
@@ -60,6 +65,7 @@ class GoogleAuthController extends Controller
                     'name' => $user->name,
                     'username' => $user->username,
                     'email' => $user->email,
+                    'avatar' => $user->avatar,
                 ],
             ],
         ]);
@@ -74,6 +80,13 @@ class GoogleAuthController extends Controller
         }
 
         return Str::before($email, '@');
+    }
+
+    private function resolveAvatar(SocialiteUser $googleUser): ?string
+    {
+        $avatar = trim((string) ($googleUser->getAvatar() ?? ''));
+
+        return $avatar !== '' ? $avatar : null;
     }
 
     private function generateUniqueUsername(string $email, mixed $ignoreUserId = null): string

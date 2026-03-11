@@ -16,6 +16,7 @@ it('creates a sanctum token for a google user', function () {
             'sub' => 'google-user-123',
             'name' => 'Taylor Otwell',
             'email' => 'taylor.otwell@example.com',
+            'avatar' => 'https://example.com/avatars/taylor.png',
         ])
     );
 
@@ -30,11 +31,13 @@ it('creates a sanctum token for a google user', function () {
         ->assertJsonPath('data.token_type', 'Bearer')
         ->assertJsonPath('data.user.email', 'taylor.otwell@example.com')
         ->assertJsonPath('data.user.name', 'Taylor Otwell')
-        ->assertJsonPath('data.user.username', 'taylor_otwell');
+        ->assertJsonPath('data.user.username', 'taylor_otwell')
+        ->assertJsonPath('data.user.avatar', 'https://example.com/avatars/taylor.png');
 
     $user = User::query()->firstWhere('email', 'taylor.otwell@example.com');
 
     expect($user)->not->toBeNull();
+    expect($user->avatar)->toBe('https://example.com/avatars/taylor.png');
     expect($user->tokens()->count())->toBe(1);
 });
 
@@ -43,6 +46,7 @@ it('reuses an existing user for google auth', function () {
         'email' => 'sourov@example.com',
         'username' => 'sourov',
         'name' => 'Old Name',
+        'avatar' => 'https://example.com/avatars/old.png',
     ]);
 
     $provider = \Mockery::mock();
@@ -53,6 +57,7 @@ it('reuses an existing user for google auth', function () {
             'sub' => 'google-user-456',
             'name' => 'Sourov Hossain',
             'email' => 'sourov@example.com',
+            'avatar' => 'https://example.com/avatars/sourov.png',
         ])
     );
 
@@ -66,9 +71,11 @@ it('reuses an existing user for google auth', function () {
     $response->assertOk()
         ->assertJsonPath('data.user.id', $user->id)
         ->assertJsonPath('data.user.username', 'sourov')
-        ->assertJsonPath('data.user.name', 'Sourov Hossain');
+        ->assertJsonPath('data.user.name', 'Sourov Hossain')
+        ->assertJsonPath('data.user.avatar', 'https://example.com/avatars/sourov.png');
 
     expect(User::query()->count())->toBe(1);
+    expect($user->fresh()->avatar)->toBe('https://example.com/avatars/sourov.png');
     expect($user->fresh()->tokens()->count())->toBe(1);
 });
 

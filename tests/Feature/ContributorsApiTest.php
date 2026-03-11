@@ -33,6 +33,7 @@ test('it returns paginated contributors ordered by submissions count', function 
     $topContributor = User::factory()->create([
         'name' => 'Alice',
         'username' => 'alice',
+        'avatar' => 'avatars/alice.png',
     ]);
     $secondContributor = User::factory()->create([
         'name' => 'Bob',
@@ -64,10 +65,12 @@ test('it returns paginated contributors ordered by submissions count', function 
         ->assertJsonPath('data.0.id', $topContributor->id)
         ->assertJsonPath('data.0.name', 'Alice')
         ->assertJsonPath('data.0.username', 'alice')
+        ->assertJsonPath('data.0.avatar', 'avatars/alice.png')
         ->assertJsonPath('data.0.submissions_count', 2)
         ->assertJsonPath('data.0.submission_views_sum', 6)
         ->assertJsonPath('data.1.id', $secondContributor->id)
         ->assertJsonPath('data.1.username', 'bob')
+        ->assertJsonPath('data.1.avatar', null)
         ->assertJsonPath('data.1.submissions_count', 1)
         ->assertJsonMissing(['id' => $nonContributor->id, 'name' => 'Charlie'])
         ->assertJsonMissingPath('data.0.email');
@@ -96,6 +99,7 @@ test('it returns a contributor summary without submissions', function () {
     $contributor = User::factory()->create([
         'name' => 'Diana',
         'username' => 'diana',
+        'avatar' => 'avatars/diana.png',
     ]);
 
     Submission::factory()->create([
@@ -114,6 +118,7 @@ test('it returns a contributor summary without submissions', function () {
         ->assertJsonPath('data.id', $contributor->id)
         ->assertJsonPath('data.name', 'Diana')
         ->assertJsonPath('data.username', 'diana')
+        ->assertJsonPath('data.avatar', 'avatars/diana.png')
         ->assertJsonPath('data.submissions_count', 1)
         ->assertJsonPath('data.submission_views_sum', 11)
         ->assertJsonMissingPath('data.submissions')
