@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ContributorController;
 use App\Http\Controllers\Api\FilterOptionsController;
 use App\Http\Controllers\Api\QuestionController;
 use App\Http\Controllers\Api\SubmissionController;
@@ -12,6 +13,8 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('/filter-options', FilterOptionsController::class);
+Route::get('/contributors', [ContributorController::class, 'index']);
+Route::get('/contributors/{contributor}', [ContributorController::class, 'show']);
 Route::get('/questions', [QuestionController::class, 'index']);
 Route::get('/questions/{question}', [QuestionController::class, 'show']);
 Route::post('/questions/{question}/views', [QuestionController::class, 'incrementViews']);
