@@ -1,17 +1,26 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('users have a generated username', function () {
-    $user = User::factory()->create();
+test('users require an explicit username', function () {
+    $user = User::factory()->make([
+        'username' => null,
+    ]);
 
-    expect($user->username)->not->toBeEmpty();
+    expect(fn () => $user->save())->toThrow(QueryException::class);
+});
+
+test('users persist the provided username', function () {
+    $user = User::factory()->create([
+        'username' => 'taylor_otwell',
+    ]);
 
     $this->assertDatabaseHas('users', [
         'id' => $user->id,
-        'username' => $user->username,
+        'username' => 'taylor_otwell',
     ]);
 });
