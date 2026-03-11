@@ -36,6 +36,7 @@ class QuickUploadForm
                             ->options(collect(QuickUploadStatus::cases())
                                 ->mapWithKeys(fn (QuickUploadStatus $status): array => [$status->value => $status->label()])
                                 ->all())
+                            ->default(QuickUploadStatus::Pending->value)
                             ->required()
                             ->live(),
                         FileUpload::make('pdf_path')

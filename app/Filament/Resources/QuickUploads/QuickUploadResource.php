@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\QuickUploads;
 
 use App\Enums\QuickUploadStatus;
+use App\Filament\Resources\QuickUploads\Pages\CreateQuickUpload;
 use App\Filament\Resources\QuickUploads\Pages\EditQuickUpload;
 use App\Filament\Resources\QuickUploads\Pages\ListQuickUploads;
 use App\Filament\Resources\QuickUploads\Schemas\QuickUploadForm;
@@ -142,6 +143,7 @@ class QuickUploadResource extends Resource
     {
         return [
             'index' => ListQuickUploads::route('/'),
+            'create' => CreateQuickUpload::route('/create'),
             'edit' => EditQuickUpload::route('/{record}/edit'),
         ];
     }
