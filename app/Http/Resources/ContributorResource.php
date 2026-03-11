@@ -17,6 +17,7 @@ class ContributorResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'username' => $this->username,
             'submissions_count' => (int) $this->submissions_count,
             'submission_views_sum' => (int) $this->submission_views_sum,
             'created_at' => $this->created_at?->toISOString(),

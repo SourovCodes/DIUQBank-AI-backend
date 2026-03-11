@@ -30,9 +30,18 @@ test('it returns paginated contributors ordered by submissions count', function 
         'exam_type_id' => $examType->id,
     ]);
 
-    $topContributor = User::factory()->create(['name' => 'Alice']);
-    $secondContributor = User::factory()->create(['name' => 'Bob']);
-    $nonContributor = User::factory()->create(['name' => 'Charlie']);
+    $topContributor = User::factory()->create([
+        'name' => 'Alice',
+        'username' => 'alice',
+    ]);
+    $secondContributor = User::factory()->create([
+        'name' => 'Bob',
+        'username' => 'bob',
+    ]);
+    $nonContributor = User::factory()->create([
+        'name' => 'Charlie',
+        'username' => 'charlie',
+    ]);
 
     Submission::factory()->count(2)->create([
         'user_id' => $topContributor->id,
@@ -54,9 +63,11 @@ test('it returns paginated contributors ordered by submissions count', function 
         ->assertJsonCount(2, 'data')
         ->assertJsonPath('data.0.id', $topContributor->id)
         ->assertJsonPath('data.0.name', 'Alice')
+        ->assertJsonPath('data.0.username', 'alice')
         ->assertJsonPath('data.0.submissions_count', 2)
         ->assertJsonPath('data.0.submission_views_sum', 6)
         ->assertJsonPath('data.1.id', $secondContributor->id)
+        ->assertJsonPath('data.1.username', 'bob')
         ->assertJsonPath('data.1.submissions_count', 1)
         ->assertJsonMissing(['id' => $nonContributor->id, 'name' => 'Charlie'])
         ->assertJsonMissingPath('data.0.email');
@@ -82,7 +93,10 @@ test('it returns a contributor summary without submissions', function () {
         'views' => 15,
     ]);
 
-    $contributor = User::factory()->create(['name' => 'Diana']);
+    $contributor = User::factory()->create([
+        'name' => 'Diana',
+        'username' => 'diana',
+    ]);
 
     Submission::factory()->create([
         'user_id' => $contributor->id,
@@ -99,6 +113,7 @@ test('it returns a contributor summary without submissions', function () {
         ->assertSuccessful()
         ->assertJsonPath('data.id', $contributor->id)
         ->assertJsonPath('data.name', 'Diana')
+        ->assertJsonPath('data.username', 'diana')
         ->assertJsonPath('data.submissions_count', 1)
         ->assertJsonPath('data.submission_views_sum', 11)
         ->assertJsonMissingPath('data.submissions')
