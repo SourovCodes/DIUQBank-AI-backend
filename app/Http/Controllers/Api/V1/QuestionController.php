@@ -30,7 +30,7 @@ class QuestionController extends Controller
         $question->load([
             ...$this->questionRelationships(),
             'submissions' => fn (HasMany $query): HasMany => $query
-                ->with('uploader:id,name')
+                ->with('uploader:id,username,name,avatar')
                 ->latest(),
         ])->loadCount('submissions');
 

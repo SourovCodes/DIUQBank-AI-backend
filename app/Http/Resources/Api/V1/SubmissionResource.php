@@ -16,15 +16,15 @@ class SubmissionResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'question_id' => $this->question_id,
             'section' => $this->section,
             'batch' => $this->batch,
             'views' => $this->views,
-            'pdf_path' => $this->pdf_path,
             'pdf_url' => $this->getPdfUrl(),
             'uploader' => $this->whenLoaded('uploader', fn (): array => [
                 'id' => $this->uploader->id,
+                'username' => $this->uploader->username,
                 'name' => $this->uploader->name,
+                'avatar' => $this->uploader->avatar,
             ]),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),

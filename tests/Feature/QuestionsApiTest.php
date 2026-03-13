@@ -96,7 +96,11 @@ test('it returns a question with its submissions on show', function () {
         'views' => 24,
     ]);
 
-    $uploader = User::factory()->create(['name' => 'Alice Uploader']);
+    $uploader = User::factory()->create([
+        'name' => 'Alice Uploader',
+        'username' => 'aliceuploader',
+        'avatar' => 'https://example.com/alice.png',
+    ]);
 
     $submission = Submission::factory()->create([
         'question_id' => $question->id,
@@ -122,7 +126,11 @@ test('it returns a question with its submissions on show', function () {
         ->assertJsonPath('data.submissions.0.batch', '56')
         ->assertJsonPath('data.submissions.0.views', 7)
         ->assertJsonPath('data.submissions.0.uploader.id', $uploader->id)
-        ->assertJsonPath('data.submissions.0.uploader.name', 'Alice Uploader');
+        ->assertJsonPath('data.submissions.0.uploader.username', 'aliceuploader')
+        ->assertJsonPath('data.submissions.0.uploader.name', 'Alice Uploader')
+        ->assertJsonPath('data.submissions.0.uploader.avatar', 'https://example.com/alice.png')
+        ->assertJsonMissingPath('data.submissions.0.question_id')
+        ->assertJsonMissingPath('data.submissions.0.pdf_path');
 });
 
 test('it increments a questions view count', function () {
