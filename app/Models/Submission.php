@@ -22,6 +22,7 @@ class Submission extends Model
         'section',
         'batch',
         'pdf_path',
+        'watermarked_pdf_path',
         'views',
     ];
 
@@ -47,7 +48,11 @@ class Submission extends Model
 
     public function getPdfUrl(): ?string
     {
-        if (blank($this->pdf_path)) {
+        $pdfPath = filled($this->watermarked_pdf_path)
+            ? $this->watermarked_pdf_path
+            : $this->pdf_path;
+
+        if (blank($pdfPath)) {
             return null;
         }
 
@@ -55,9 +60,9 @@ class Submission extends Model
         $disk = Storage::disk('s3');
 
         try {
-            return $disk->temporaryUrl($this->pdf_path, now()->addMinutes(10));
+            return $disk->temporaryUrl($pdfPath, now()->addMinutes(10));
         } catch (Throwable) {
-            return $disk->url($this->pdf_path);
+            return $disk->url($pdfPath);
         }
     }
 }

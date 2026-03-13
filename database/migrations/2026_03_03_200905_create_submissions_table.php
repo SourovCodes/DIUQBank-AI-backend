@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('section')->nullable();
             $table->string('batch')->nullable();
             $table->string('pdf_path');
+            $table->string('watermarked_pdf_path')->nullable();
             $table->unsignedInteger('views')->default(0);
             $table->timestamps();
         });
