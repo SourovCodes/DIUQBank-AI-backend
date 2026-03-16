@@ -38,7 +38,7 @@ class ImportQuickUploads extends Command
 
         do {
             $this->info("Fetching page {$page}...");
-            $response = Http::get($baseUrl, ['page' => $page]);
+            $response = Http::retry(3, 1000)->get($baseUrl, ['page' => $page]);
 
             if ($response->failed()) {
                 $this->error("Failed to fetch page {$page}.");
@@ -82,7 +82,7 @@ class ImportQuickUploads extends Command
 
                 $pdfContent = null;
                 try {
-                    $pdfResponse = Http::timeout(30)->get($pdfUrl);
+                    $pdfResponse = Http::timeout(60)->retry(5, 2000)->get($pdfUrl);
                     if ($pdfResponse->successful()) {
                         $pdfContent = $pdfResponse->body();
                     }
