@@ -22,7 +22,7 @@ class Submission extends Model
         'section',
         'batch',
         'pdf_path',
-        'watermarked_pdf_path',
+        'compressed_pdf_path',
         'views',
     ];
 
@@ -48,8 +48,8 @@ class Submission extends Model
 
     public function getPdfUrl(): ?string
     {
-        $pdfPath = filled($this->watermarked_pdf_path)
-            ? $this->watermarked_pdf_path
+        $pdfPath = filled($this->compressed_pdf_path)
+            ? $this->compressed_pdf_path
             : $this->pdf_path;
 
         if (blank($pdfPath)) {

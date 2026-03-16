@@ -24,7 +24,7 @@ class SubmissionFactory extends Factory
             'section' => fake()->optional()->bothify('Sec-##'),
             'batch' => fake()->optional()->numberBetween(2018, 2035),
             'pdf_path' => 'submissions/'.fake()->uuid().'.pdf',
-            'watermarked_pdf_path' => null,
+            'compressed_pdf_path' => null,
             'views' => fake()->numberBetween(0, 1000),
         ];
     }
