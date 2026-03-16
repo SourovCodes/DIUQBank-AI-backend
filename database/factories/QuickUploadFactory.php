@@ -21,12 +21,14 @@ class QuickUploadFactory extends Factory
         return [
             'user_id' => User::factory(),
             'pdf_path' => 'quick-uploads/'.fake()->uuid().'.pdf',
+            'pdf_size' => fake()->numberBetween(50_000, 9_500_000),
+            'compressed_pdf_path' => null,
+            'compressed_pdf_size' => null,
             'status' => QuickUploadStatus::Pending,
-            'ai_rejection_reason' => null,
+            'reason' => null,
             'ai_processed_at' => null,
             'manual_review_requested_at' => null,
             'reviewer_id' => null,
-            'manual_rejection_reason' => null,
             'manual_reviewed_at' => null,
         ];
     }
@@ -42,7 +44,7 @@ class QuickUploadFactory extends Factory
     {
         return $this->state(fn (): array => [
             'status' => QuickUploadStatus::AiRejected,
-            'ai_rejection_reason' => $reason ?? fake()->sentence(),
+            'reason' => $reason ?? fake()->sentence(),
             'ai_processed_at' => now(),
         ]);
     }
@@ -61,7 +63,7 @@ class QuickUploadFactory extends Factory
             'status' => QuickUploadStatus::ManualRejected,
             'manual_review_requested_at' => now()->subHour(),
             'reviewer_id' => $reviewer?->getKey() ?? User::factory(),
-            'manual_rejection_reason' => $reason ?? fake()->sentence(),
+            'reason' => $reason ?? fake()->sentence(),
             'manual_reviewed_at' => now(),
         ]);
     }

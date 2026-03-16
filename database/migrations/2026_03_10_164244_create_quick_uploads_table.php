@@ -16,12 +16,14 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('pdf_path');
+            $table->unsignedBigInteger('pdf_size')->nullable();
+            $table->string('compressed_pdf_path')->nullable();
+            $table->unsignedBigInteger('compressed_pdf_size')->nullable();
             $table->enum('status', QuickUploadStatus::values())->default(QuickUploadStatus::Pending->value);
-            $table->text('ai_rejection_reason')->nullable();
+            $table->text('reason')->nullable();
             $table->timestamp('ai_processed_at')->nullable();
             $table->timestamp('manual_review_requested_at')->nullable();
             $table->foreignId('reviewer_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->text('manual_rejection_reason')->nullable();
             $table->timestamp('manual_reviewed_at')->nullable();
             $table->timestamps();
 

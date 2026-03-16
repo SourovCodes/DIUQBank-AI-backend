@@ -16,7 +16,7 @@ class EditQuickUpload extends EditRecord
      */
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        return QuickUploadResource::mutateWorkflowData($data);
+        return QuickUploadResource::mutateWorkflowData($data, $this->getRecord());
     }
 
     protected function getHeaderActions(): array

@@ -3,15 +3,18 @@
 namespace App\Filament\Resources\QuickUploads\Tables;
 
 use App\Enums\QuickUploadStatus;
+use App\Jobs\CompressQuickUploadPdf;
+use App\Models\QuickUpload;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Filesystem\FilesystemAdapter;
-use Illuminate\Support\Facades\Storage;
-use Throwable;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class QuickUploadsTable
 {
@@ -36,33 +39,23 @@ class QuickUploadsTable
                     ->placeholder('—')
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('ai_rejection_reason')
-                    ->label('AI reason')
+                TextColumn::make('reason')
+                    ->label('Reason')
                     ->limit(40)
                     ->wrap()
                     ->toggleable(),
-                TextColumn::make('manual_rejection_reason')
-                    ->label('Manual reason')
-                    ->limit(40)
-                    ->wrap()
+                TextColumn::make('pdf_size_display')
+                    ->label('Original size')
+                    ->state(fn (QuickUpload $record): string => $record->getPdfSizeLabel() ?? '—')
+                    ->toggleable(),
+                TextColumn::make('compressed_pdf_size_display')
+                    ->label('Compressed size')
+                    ->state(fn (QuickUpload $record): string => $record->getCompressedPdfSizeLabel() ?? '—')
                     ->toggleable(),
                 TextColumn::make('pdf_open')
                     ->label('PDF')
                     ->state('Open PDF')
-                    ->url(function ($record): ?string {
-                        if (blank($record->pdf_path)) {
-                            return null;
-                        }
-
-                        /** @var FilesystemAdapter $disk */
-                        $disk = Storage::disk('s3');
-
-                        try {
-                            return $disk->temporaryUrl($record->pdf_path, now()->addMinutes(10));
-                        } catch (Throwable) {
-                            return $disk->url($record->pdf_path);
-                        }
-                    })
+                    ->url(fn (QuickUpload $record): ?string => $record->getPdfUrl())
                     ->openUrlInNewTab(),
                 TextColumn::make('manual_review_requested_at')
                     ->dateTime()
@@ -95,10 +88,42 @@ class QuickUploadsTable
             ->emptyStateHeading('No quick uploads found')
             ->emptyStateDescription('Uploads will appear here for AI and admin review.')
             ->recordActions([
+                Action::make('queueCompression')
+                    ->label(fn (QuickUpload $record): string => filled($record->compressed_pdf_path) ? 'Recompress PDF' : 'Compress PDF')
+                    ->icon('heroicon-o-arrow-path')
+                    ->requiresConfirmation()
+                    ->disabled(fn (QuickUpload $record): bool => blank($record->pdf_path))
+                    ->action(function (QuickUpload $record): void {
+                        CompressQuickUploadPdf::dispatch($record);
+
+                        Notification::make()
+                            ->title('Quick upload queued')
+                            ->body('PDF compression has been queued.')
+                            ->success()
+                            ->send();
+                    }),
                 EditAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('queueCompression')
+                        ->label('Queue Compression')
+                        ->icon('heroicon-o-arrow-path')
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (EloquentCollection $records): void {
+                            foreach ($records as $record) {
+                                if ($record instanceof QuickUpload && filled($record->pdf_path)) {
+                                    CompressQuickUploadPdf::dispatch($record);
+                                }
+                            }
+
+                            Notification::make()
+                                ->title('Quick uploads queued')
+                                ->body($records->count().' quick upload(s) queued for PDF compression.')
+                                ->success()
+                                ->send();
+                        }),
                     DeleteBulkAction::make(),
                 ]),
             ]);

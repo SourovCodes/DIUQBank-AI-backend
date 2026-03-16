@@ -12,9 +12,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
-use Illuminate\Filesystem\FilesystemAdapter;
-use Illuminate\Support\Facades\Storage;
-use Throwable;
 
 class QuickUploadForm
 {
@@ -47,8 +44,8 @@ class QuickUploadForm
                             ->maxSize(10240)
                             ->openable()
                             ->required(),
-                        Textarea::make('ai_rejection_reason')
-                            ->label('AI rejection reason')
+                        Textarea::make('reason')
+                            ->label('Reason')
                             ->rows(4)
                             ->visible(fn (Get $get): bool => in_array($get('status'), [
                                 QuickUploadStatus::AiRejected->value,
@@ -56,12 +53,26 @@ class QuickUploadForm
                                 QuickUploadStatus::ManualApproved->value,
                                 QuickUploadStatus::ManualRejected->value,
                             ], true))
-                            ->required(fn (Get $get): bool => $get('status') === QuickUploadStatus::AiRejected->value),
-                        Textarea::make('manual_rejection_reason')
-                            ->label('Manual rejection reason')
-                            ->rows(4)
-                            ->visible(fn (Get $get): bool => $get('status') === QuickUploadStatus::ManualRejected->value)
-                            ->required(fn (Get $get): bool => $get('status') === QuickUploadStatus::ManualRejected->value),
+                            ->required(fn (Get $get): bool => in_array($get('status'), [
+                                QuickUploadStatus::AiRejected->value,
+                                QuickUploadStatus::ManualRejected->value,
+                            ], true)),
+                    ]),
+                Section::make('PDF files')
+                    ->columnSpanFull()
+                    ->columns(2)
+                    ->collapsible()
+                    ->schema([
+                        Placeholder::make('pdf_size_display')
+                            ->label('Original size')
+                            ->content(fn (?QuickUpload $record): string => $record?->getPdfSizeLabel() ?? '—'),
+                        Placeholder::make('compressed_pdf_size_display')
+                            ->label('Compressed size')
+                            ->content(fn (?QuickUpload $record): string => $record?->getCompressedPdfSizeLabel() ?? '—'),
+                        Placeholder::make('compressed_pdf_path_display')
+                            ->label('Compressed PDF path')
+                            ->content(fn (?QuickUpload $record): string => $record?->compressed_pdf_path ?? '—')
+                            ->columnSpanFull(),
                     ]),
                 Section::make('Workflow timeline')
                     ->columnSpanFull()
@@ -94,18 +105,11 @@ class QuickUploadForm
                         View::make('filament.resources.quick-uploads.components.pdf-viewer')
                             ->columnSpanFull()
                             ->viewData(function (?QuickUpload $record): array {
-                                if (blank($record?->pdf_path)) {
+                                if (! $record instanceof QuickUpload) {
                                     return ['pdfUrl' => null];
                                 }
 
-                                /** @var FilesystemAdapter $disk */
-                                $disk = Storage::disk('s3');
-
-                                try {
-                                    return ['pdfUrl' => $disk->temporaryUrl($record->pdf_path, now()->addMinutes(10))];
-                                } catch (Throwable) {
-                                    return ['pdfUrl' => $disk->url($record->pdf_path)];
-                                }
+                                return ['pdfUrl' => $record->getPdfUrl()];
                             }),
                     ]),
             ]);

@@ -12,16 +12,28 @@ test('it stores compressed pdf path when compression succeeds', function () {
 
     $submission = Submission::factory()->create([
         'pdf_path' => 'submissions/original.pdf',
+        'pdf_size' => null,
         'compressed_pdf_path' => null,
+        'compressed_pdf_size' => null,
     ]);
 
-    Storage::disk('s3')->put($submission->pdf_path, '%PDF-1.4 test document');
+    $sourceContents = '%PDF-1.4 test document';
+
+    Storage::disk('s3')->put($submission->pdf_path, $sourceContents);
 
     $job = new class($submission) extends CompressSubmissionPdf
     {
-        protected function runGhostscript(string $sourcePath, string $compressedPath): void
+        protected function compressPdf(Submission $submission): array
         {
-            copy($sourcePath, $compressedPath);
+            $compressedPath = 'submissions/processed/'.$submission->getKey().'/compressed.pdf';
+
+            Storage::disk('s3')->put($compressedPath, 'compressed pdf');
+
+            return [
+                'compressed_path' => $compressedPath,
+                'compressed_size' => Storage::disk('s3')->size($compressedPath),
+                'original_size' => Storage::disk('s3')->size($submission->pdf_path),
+            ];
         }
     };
 
@@ -30,6 +42,8 @@ test('it stores compressed pdf path when compression succeeds', function () {
     $submission->refresh();
 
     expect($submission->compressed_pdf_path)->not->toBeNull();
+    expect($submission->compressed_pdf_size)->toBe(Storage::disk('s3')->size($submission->compressed_pdf_path));
+    expect($submission->pdf_size)->toBe(strlen($sourceContents));
 
     Storage::disk('s3')->assertExists($submission->compressed_pdf_path);
 });
@@ -40,11 +54,12 @@ test('it skips compression when source file does not exist', function () {
     $submission = Submission::factory()->create([
         'pdf_path' => 'submissions/missing.pdf',
         'compressed_pdf_path' => null,
+        'compressed_pdf_size' => null,
     ]);
 
     $job = new class($submission) extends CompressSubmissionPdf
     {
-        protected function runGhostscript(string $sourcePath, string $compressedPath): void
+        protected function compressPdf(Submission $submission): array
         {
             throw new \RuntimeException('This should not run when source file is missing.');
         }
@@ -55,4 +70,5 @@ test('it skips compression when source file does not exist', function () {
     $submission->refresh();
 
     expect($submission->compressed_pdf_path)->toBeNull();
+    expect($submission->compressed_pdf_size)->toBeNull();
 });

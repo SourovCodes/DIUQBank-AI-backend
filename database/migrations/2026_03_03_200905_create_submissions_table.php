@@ -18,7 +18,9 @@ return new class extends Migration
             $table->string('section')->nullable();
             $table->string('batch')->nullable();
             $table->string('pdf_path');
+            $table->unsignedBigInteger('pdf_size')->nullable();
             $table->string('compressed_pdf_path')->nullable();
+            $table->unsignedBigInteger('compressed_pdf_size')->nullable();
             $table->unsignedInteger('views')->default(0);
             $table->timestamps();
         });

@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Models\Submission;
+use App\Models\QuickUpload;
 use App\Services\Pdf\PdfCompressionService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class CompressSubmissionPdf implements ShouldQueue
+class CompressQuickUploadPdf implements ShouldQueue
 {
     use Queueable;
 
@@ -22,7 +22,7 @@ class CompressSubmissionPdf implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(public Submission $submission)
+    public function __construct(public QuickUpload $quickUpload)
     {
         $this->onQueue('pdf-processing');
     }
@@ -33,7 +33,7 @@ class CompressSubmissionPdf implements ShouldQueue
     public function middleware(): array
     {
         return [
-            (new WithoutOverlapping('submission-pdf-compress-'.$this->submission->getKey()))
+            (new WithoutOverlapping('quick-upload-pdf-compress-'.$this->quickUpload->getKey()))
                 ->releaseAfter(30)
                 ->expireAfter(300),
         ];
@@ -52,27 +52,27 @@ class CompressSubmissionPdf implements ShouldQueue
      */
     public function handle(): void
     {
-        $submission = $this->submission->fresh();
+        $quickUpload = $this->quickUpload->fresh();
 
-        if (! $submission instanceof Submission || blank($submission->pdf_path)) {
+        if (! $quickUpload instanceof QuickUpload || blank($quickUpload->pdf_path)) {
             return;
         }
 
-        $previousCompressedPath = $submission->compressed_pdf_path;
+        $previousCompressedPath = $quickUpload->compressed_pdf_path;
 
-        if (! Storage::disk('s3')->exists($submission->pdf_path)) {
-            Log::warning('Submission PDF compression skipped because source file was not found.', [
-                'submission_id' => $submission->getKey(),
-                'pdf_path' => $submission->pdf_path,
+        if (! Storage::disk('s3')->exists($quickUpload->pdf_path)) {
+            Log::warning('Quick upload PDF compression skipped because source file was not found.', [
+                'quick_upload_id' => $quickUpload->getKey(),
+                'pdf_path' => $quickUpload->pdf_path,
             ]);
 
             return;
         }
 
-        $result = $this->compressPdf($submission);
+        $result = $this->compressPdf($quickUpload);
 
-        $submission->forceFill([
-            'pdf_size' => $result['original_size'] ?? $submission->pdf_size,
+        $quickUpload->forceFill([
+            'pdf_size' => $result['original_size'] ?? $quickUpload->pdf_size,
             'compressed_pdf_path' => $result['compressed_path'],
             'compressed_pdf_size' => $result['compressed_size'],
         ])->save();
@@ -85,11 +85,11 @@ class CompressSubmissionPdf implements ShouldQueue
     /**
      * @return array{compressed_path: string, compressed_size: int, original_size: int|null}
      */
-    protected function compressPdf(Submission $submission): array
+    protected function compressPdf(QuickUpload $quickUpload): array
     {
         return app(PdfCompressionService::class)->compressStoredPdf(
-            sourcePath: $submission->pdf_path,
-            destinationDirectory: 'submissions/processed/'.$submission->getKey(),
+            sourcePath: $quickUpload->pdf_path,
+            destinationDirectory: 'quick-uploads/processed/'.$quickUpload->getKey(),
             destinationFileName: Str::uuid().'-compressed.pdf',
         );
     }

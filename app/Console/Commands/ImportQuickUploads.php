@@ -112,6 +112,7 @@ class ImportQuickUploads extends Command
                 QuickUpload::create([
                     'user_id' => $user->id,
                     'pdf_path' => $filename,
+                    'pdf_size' => strlen($pdfContent),
                     'status' => QuickUploadStatus::Pending,
                     'created_at' => $item['created_at'] ?? now(),
                     'updated_at' => $item['updated_at'] ?? now(),

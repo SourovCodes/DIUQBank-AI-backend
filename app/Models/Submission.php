@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Number;
 use Throwable;
 
 class Submission extends Model
@@ -22,7 +23,9 @@ class Submission extends Model
         'section',
         'batch',
         'pdf_path',
+        'pdf_size',
         'compressed_pdf_path',
+        'compressed_pdf_size',
         'views',
     ];
 
@@ -32,6 +35,8 @@ class Submission extends Model
     protected function casts(): array
     {
         return [
+            'pdf_size' => 'integer',
+            'compressed_pdf_size' => 'integer',
             'views' => 'integer',
         ];
     }
@@ -64,5 +69,19 @@ class Submission extends Model
         } catch (Throwable) {
             return $disk->url($pdfPath);
         }
+    }
+
+    public function getPdfSizeLabel(): ?string
+    {
+        return filled($this->pdf_size)
+            ? Number::fileSize($this->pdf_size)
+            : null;
+    }
+
+    public function getCompressedPdfSizeLabel(): ?string
+    {
+        return filled($this->compressed_pdf_size)
+            ? Number::fileSize($this->compressed_pdf_size)
+            : null;
     }
 }

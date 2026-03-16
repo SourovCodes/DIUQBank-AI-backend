@@ -9,6 +9,7 @@ use App\Filament\Resources\QuickUploads\Pages\ListQuickUploads;
 use App\Filament\Resources\QuickUploads\Schemas\QuickUploadForm;
 use App\Filament\Resources\QuickUploads\Tables\QuickUploadsTable;
 use App\Models\QuickUpload;
+use App\Services\Pdf\PdfCompressionService;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -48,8 +49,7 @@ class QuickUploadResource extends Resource
             'uploader.name',
             'reviewer.name',
             'status',
-            'ai_rejection_reason',
-            'manual_rejection_reason',
+            'reason',
         ];
     }
 
@@ -79,8 +79,10 @@ class QuickUploadResource extends Resource
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public static function mutateWorkflowData(array $data): array
+    public static function mutateWorkflowData(array $data, ?QuickUpload $record = null): array
     {
+        $data = static::syncPdfMetadata($data, $record);
+
         $status = $data['status'] instanceof QuickUploadStatus
             ? $data['status']
             : QuickUploadStatus::from((string) $data['status']);
@@ -101,11 +103,11 @@ class QuickUploadResource extends Resource
 
         if (in_array($status, [QuickUploadStatus::Pending, QuickUploadStatus::Processing], true)) {
             $data['ai_processed_at'] = null;
-            $data['ai_rejection_reason'] = null;
+            $data['reason'] = null;
         }
 
         if ($status === QuickUploadStatus::AiApproved) {
-            $data['ai_rejection_reason'] = null;
+            $data['reason'] = null;
         }
 
         if (in_array($status, [
@@ -132,11 +134,52 @@ class QuickUploadResource extends Resource
             $data['manual_review_requested_at'] = null;
         }
 
-        if ($status !== QuickUploadStatus::ManualRejected) {
-            $data['manual_rejection_reason'] = null;
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected static function syncPdfMetadata(array $data, ?QuickUpload $record = null): array
+    {
+        $pdfPath = static::normalizePdfPath($data['pdf_path'] ?? $record?->pdf_path);
+
+        $data['pdf_path'] = $pdfPath;
+
+        if (blank($pdfPath)) {
+            $data['pdf_size'] = null;
+            $data['compressed_pdf_path'] = null;
+            $data['compressed_pdf_size'] = null;
+
+            return $data;
         }
 
+        if ($record instanceof QuickUpload && $record->pdf_path !== $pdfPath) {
+            $data['compressed_pdf_path'] = null;
+            $data['compressed_pdf_size'] = null;
+        }
+
+        $data['pdf_size'] = app(PdfCompressionService::class)->storedFileSize($pdfPath)
+            ?? $data['pdf_size']
+            ?? $record?->pdf_size;
+
         return $data;
+    }
+
+    protected static function normalizePdfPath(mixed $pdfPath): ?string
+    {
+        if (is_array($pdfPath)) {
+            $pdfPath = reset($pdfPath);
+        }
+
+        if (! is_string($pdfPath)) {
+            return null;
+        }
+
+        $pdfPath = trim($pdfPath);
+
+        return $pdfPath !== '' ? $pdfPath : null;
     }
 
     public static function getPages(): array

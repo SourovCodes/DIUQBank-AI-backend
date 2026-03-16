@@ -93,6 +93,11 @@ it('creates a quick upload after confirming the uploaded file exists on s3', fun
         ->with('quick-uploads/'.$user->id.'/completed-upload.pdf')
         ->andReturn(true);
 
+    $disk->shouldReceive('size')
+        ->once()
+        ->with('quick-uploads/'.$user->id.'/completed-upload.pdf')
+        ->andReturn(4096);
+
     $response = $this->postJson('/api/v1/quick-uploads', [
         'pdf_path' => 'quick-uploads/'.$user->id.'/completed-upload.pdf',
     ]);
@@ -100,11 +105,13 @@ it('creates a quick upload after confirming the uploaded file exists on s3', fun
     $response
         ->assertCreated()
         ->assertJsonPath('data.status', QuickUploadStatus::Pending->value)
-        ->assertJsonPath('data.pdf_path', 'quick-uploads/'.$user->id.'/completed-upload.pdf');
+        ->assertJsonPath('data.pdf_path', 'quick-uploads/'.$user->id.'/completed-upload.pdf')
+        ->assertJsonPath('data.pdf_size', 4096);
 
     $this->assertDatabaseHas('quick_uploads', [
         'user_id' => $user->id,
         'pdf_path' => 'quick-uploads/'.$user->id.'/completed-upload.pdf',
+        'pdf_size' => 4096,
         'status' => QuickUploadStatus::Pending->value,
     ]);
 });

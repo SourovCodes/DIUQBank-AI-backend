@@ -62,9 +62,12 @@ class QuickUploadController extends Controller
             ]);
         }
 
+        $pdfSize = $disk->size($pdfPath);
+
         $quickUpload = QuickUpload::query()->create([
             'user_id' => $request->user()->getKey(),
             'pdf_path' => $pdfPath,
+            'pdf_size' => $pdfSize,
             'status' => QuickUploadStatus::Pending,
         ]);
 
@@ -73,6 +76,7 @@ class QuickUploadController extends Controller
                 'id' => $quickUpload->id,
                 'status' => $quickUpload->status->value,
                 'pdf_path' => $quickUpload->pdf_path,
+                'pdf_size' => $quickUpload->pdf_size,
                 'created_at' => $quickUpload->created_at?->toISOString(),
             ],
         ], 201);

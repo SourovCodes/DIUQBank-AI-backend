@@ -17,9 +17,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Filesystem\FilesystemAdapter;
-use Illuminate\Support\Facades\Storage;
-use Throwable;
 
 class SubmissionsTable
 {
@@ -54,23 +51,18 @@ class SubmissionsTable
                 TextColumn::make('views')
                     ->numeric()
                     ->sortable(),
+                TextColumn::make('pdf_size_display')
+                    ->label('Original size')
+                    ->state(fn (Submission $record): string => $record->getPdfSizeLabel() ?? '—')
+                    ->toggleable(),
+                TextColumn::make('compressed_pdf_size_display')
+                    ->label('Compressed size')
+                    ->state(fn (Submission $record): string => $record->getCompressedPdfSizeLabel() ?? '—')
+                    ->toggleable(),
                 TextColumn::make('pdf_open')
                     ->label('PDF')
                     ->state('Open PDF')
-                    ->url(function ($record): ?string {
-                        if (blank($record->pdf_path)) {
-                            return null;
-                        }
-
-                        /** @var FilesystemAdapter $disk */
-                        $disk = Storage::disk('s3');
-
-                        try {
-                            return $disk->temporaryUrl($record->pdf_path, now()->addMinutes(10));
-                        } catch (Throwable) {
-                            return $disk->url($record->pdf_path);
-                        }
-                    })
+                    ->url(fn (Submission $record): ?string => $record->getPdfUrl())
                     ->openUrlInNewTab(),
                 TextColumn::make('created_at')
                     ->dateTime()
@@ -108,15 +100,16 @@ class SubmissionsTable
             ->emptyStateDescription('Create your first submission with an uploader, question, and PDF.')
             ->recordActions([
                 Action::make('queueCompression')
-                    ->label('Queue Compression')
+                    ->label(fn (Submission $record): string => filled($record->compressed_pdf_path) ? 'Recompress PDF' : 'Compress PDF')
                     ->icon('heroicon-o-arrow-path')
                     ->requiresConfirmation()
+                    ->disabled(fn (Submission $record): bool => blank($record->pdf_path))
                     ->action(function (Submission $record): void {
                         CompressSubmissionPdf::dispatch($record);
 
                         Notification::make()
                             ->title('Submission queued')
-                            ->body('PDF compression has been queued for background processing.')
+                            ->body('PDF compression has been queued.')
                             ->success()
                             ->send();
                     }),
@@ -132,7 +125,7 @@ class SubmissionsTable
                         ->deselectRecordsAfterCompletion()
                         ->action(function (EloquentCollection $records): void {
                             foreach ($records as $record) {
-                                if ($record instanceof Submission) {
+                                if ($record instanceof Submission && filled($record->pdf_path)) {
                                     CompressSubmissionPdf::dispatch($record);
                                 }
                             }

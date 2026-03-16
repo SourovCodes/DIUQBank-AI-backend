@@ -12,9 +12,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Filesystem\FilesystemAdapter;
-use Illuminate\Support\Facades\Storage;
-use Throwable;
 
 class SubmissionForm
 {
@@ -91,6 +88,22 @@ class SubmissionForm
                             ->openable()
                             ->required(),
                     ]),
+                Section::make('PDF files')
+                    ->columnSpanFull()
+                    ->columns(2)
+                    ->collapsible()
+                    ->schema([
+                        Placeholder::make('pdf_size_display')
+                            ->label('Original size')
+                            ->content(fn (?Submission $record): string => $record?->getPdfSizeLabel() ?? '—'),
+                        Placeholder::make('compressed_pdf_size_display')
+                            ->label('Compressed size')
+                            ->content(fn (?Submission $record): string => $record?->getCompressedPdfSizeLabel() ?? '—'),
+                        Placeholder::make('compressed_pdf_path_display')
+                            ->label('Compressed PDF path')
+                            ->content(fn (?Submission $record): string => $record?->compressed_pdf_path ?? '—')
+                            ->columnSpanFull(),
+                    ]),
                 Section::make('Timestamps')
                     ->columnSpanFull()
                     ->columns(2)
@@ -112,18 +125,11 @@ class SubmissionForm
                         View::make('filament.resources.submissions.components.pdf-viewer')
                             ->columnSpanFull()
                             ->viewData(function (?Submission $record): array {
-                                if (blank($record?->pdf_path)) {
+                                if (! $record instanceof Submission) {
                                     return ['pdfUrl' => null];
                                 }
 
-                                /** @var FilesystemAdapter $disk */
-                                $disk = Storage::disk('s3');
-
-                                try {
-                                    return ['pdfUrl' => $disk->temporaryUrl($record->pdf_path, now()->addMinutes(10))];
-                                } catch (Throwable) {
-                                    return ['pdfUrl' => $disk->url($record->pdf_path)];
-                                }
+                                return ['pdfUrl' => $record->getPdfUrl()];
                             }),
                     ]),
             ]);

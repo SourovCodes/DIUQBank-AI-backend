@@ -55,7 +55,7 @@ it('records reviewer metadata when an admin manually rejects a quick upload', fu
     ])
         ->set('data.pdf_path', [$quickUpload->pdf_path])
         ->set('data.status', QuickUploadStatus::ManualRejected->value)
-        ->set('data.manual_rejection_reason', 'Needs a clearer scan.')
+        ->set('data.reason', 'Needs a clearer scan.')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -72,6 +72,6 @@ it('records reviewer metadata when an admin manually rejects a quick upload', fu
         'id' => $quickUpload->id,
         'status' => QuickUploadStatus::ManualRejected->value,
         'reviewer_id' => auth()->id(),
-        'manual_rejection_reason' => 'Needs a clearer scan.',
+        'reason' => 'Needs a clearer scan.',
     ]);
 });

@@ -28,6 +28,6 @@ it('stores manual rejection metadata for admin review outcomes', function (): vo
         'id' => $quickUpload->id,
         'status' => QuickUploadStatus::ManualRejected->value,
         'reviewer_id' => $reviewer->id,
-        'manual_rejection_reason' => 'Document quality is too poor to verify.',
+        'reason' => 'Document quality is too poor to verify.',
     ]);
 });
