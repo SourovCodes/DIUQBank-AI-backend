@@ -1,10 +1,12 @@
 <?php
 
 use App\Enums\QuickUploadStatus;
+use App\Jobs\CompressQuickUploadPdf;
 use App\Models\QuickUpload;
 use App\Models\User;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
@@ -83,6 +85,7 @@ it('creates a quick upload after confirming the uploaded file exists on s3', fun
     $user = User::factory()->create();
 
     Sanctum::actingAs($user);
+    Queue::fake();
 
     $disk = \Mockery::mock(FilesystemAdapter::class);
 
@@ -114,6 +117,11 @@ it('creates a quick upload after confirming the uploaded file exists on s3', fun
         'pdf_size' => 4096,
         'status' => QuickUploadStatus::Pending->value,
     ]);
+
+    Queue::assertPushed(CompressQuickUploadPdf::class, function (CompressQuickUploadPdf $job) use ($user): bool {
+        return $job->quickUpload->user_id === $user->id
+            && $job->quickUpload->pdf_path === 'quick-uploads/'.$user->id.'/completed-upload.pdf';
+    });
 });
 
 it('rejects quick upload finalization when the file does not exist on s3', function () {

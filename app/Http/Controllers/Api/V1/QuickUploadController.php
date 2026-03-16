@@ -6,6 +6,7 @@ use App\Enums\QuickUploadStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\CompleteQuickUploadRequest;
 use App\Http\Requests\Api\V1\StoreQuickUploadRequest;
+use App\Jobs\CompressQuickUploadPdf;
 use App\Models\QuickUpload;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\JsonResponse;
@@ -71,9 +72,11 @@ class QuickUploadController extends Controller
             'status' => QuickUploadStatus::Pending,
         ]);
 
+        CompressQuickUploadPdf::dispatch($quickUpload)->afterCommit();
+
         return response()->json([
             'data' => [
-                'id' => $quickUpload->id,
+                'id' => $quickUpload->getKey(),
                 'status' => $quickUpload->status->value,
                 'pdf_path' => $quickUpload->pdf_path,
                 'pdf_size' => $quickUpload->pdf_size,
