@@ -32,7 +32,7 @@ class ImportQuickUploads extends Command
     public function handle()
     {
         $baseUrl = 'https://diuqbank.com/public/submissions';
-        $page = 16;
+        $page = 1;
 
         $this->info("Starting data import from {$baseUrl}...");
 
