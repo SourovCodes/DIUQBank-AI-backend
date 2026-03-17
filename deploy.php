@@ -6,7 +6,6 @@ require 'recipe/laravel.php';
 
 // Config
 
-set('repository', '');
 set('writable_mode', 'chmod');
 set('keep_releases', 2);
 
@@ -15,6 +14,7 @@ add('shared_dirs', []);
 add('writable_dirs', []);
 
 // Load environment variables
+$repository = getenv('DEPLOY_REPOSITORY');
 $hostname = getenv('DEPLOY_HOSTNAME');
 $remoteUser = getenv('DEPLOY_REMOTE_USER');
 $deployPath = getenv('DEPLOY_PATH');
@@ -23,6 +23,9 @@ $sshPort = getenv('DEPLOY_SSH_PORT');
 $branch = getenv('DEPLOY_BRANCH') ?: 'main';
 
 // Validate required environment variables
+if (! $repository) {
+    throw new \RuntimeException('DEPLOY_REPOSITORY environment variable is required');
+}
 if (! $hostname) {
     throw new \RuntimeException('DEPLOY_HOSTNAME environment variable is required');
 }
@@ -38,6 +41,8 @@ if (! $httpUser) {
 if (! $sshPort) {
     throw new \RuntimeException('DEPLOY_SSH_PORT environment variable is required');
 }
+
+set('repository', $repository);
 
 // Hosts
 
@@ -89,7 +94,6 @@ task('deploy:npm', function () {
     writeln('Skipping npm install on server (assets built locally)');
 });
 
-
 // Hooks
 
 // Build assets locally before deployment starts
@@ -97,6 +101,5 @@ before('deploy', 'build:assets');
 
 // Upload assets after the release is prepared but before going live
 after('deploy:vendors', 'upload:assets');
-
 
 after('deploy:failed', 'deploy:unlock');
