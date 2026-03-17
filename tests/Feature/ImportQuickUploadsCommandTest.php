@@ -1,16 +1,19 @@
 <?php
 
 use App\Enums\QuickUploadStatus;
+use App\Jobs\CompressQuickUploadPdf;
 use App\Models\QuickUpload;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
 it('imports quick uploads while reusing users and skipping invalid items', function (): void {
     Storage::fake('s3');
+    Queue::fake();
 
     $existingUser = User::factory()->create([
         'email' => 'existing@example.com',
@@ -98,4 +101,6 @@ it('imports quick uploads while reusing users and skipping invalid items', funct
         ->and(QuickUpload::query()->where('user_id', $existingUser->id)->count())->toBe(1)
         ->and(QuickUpload::query()->where('status', QuickUploadStatus::Pending->value)->count())->toBe(3)
         ->and(Storage::disk('s3')->allFiles('quick-uploads'))->toHaveCount(3);
+
+    Queue::assertPushed(CompressQuickUploadPdf::class, 3);
 });

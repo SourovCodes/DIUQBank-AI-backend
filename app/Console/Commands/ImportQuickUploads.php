@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\QuickUploadStatus;
+use App\Jobs\CompressQuickUploadPdf;
 use App\Models\QuickUpload;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -143,6 +144,13 @@ class ImportQuickUploads extends Command
 
         if ($quickUploads !== []) {
             QuickUpload::query()->insert($quickUploads);
+
+            QuickUpload::query()
+                ->whereIn('pdf_path', array_column($quickUploads, 'pdf_path'))
+                ->get()
+                ->each(static function (QuickUpload $quickUpload): void {
+                    CompressQuickUploadPdf::dispatch($quickUpload)->afterCommit();
+                });
         }
     }
 
