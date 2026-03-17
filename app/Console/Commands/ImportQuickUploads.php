@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -192,8 +193,8 @@ class ImportQuickUploads extends Command
                 'preferred_username' => $preferredUsername !== '' ? $preferredUsername : $fallbackName,
                 'pdf_url' => (string) $pdfUrl,
                 'extension' => $this->resolveExtension($item),
-                'created_at' => $item['created_at'] ?? now(),
-                'updated_at' => $item['updated_at'] ?? now(),
+                'created_at' => $this->normalizeTimestamp($item['created_at'] ?? null),
+                'updated_at' => $this->normalizeTimestamp($item['updated_at'] ?? null),
             ];
         }
 
@@ -348,5 +349,18 @@ class ImportQuickUploads extends Command
         }
 
         return pathinfo($fileName, PATHINFO_EXTENSION) ?: 'pdf';
+    }
+
+    protected function normalizeTimestamp(mixed $value): string
+    {
+        if ($value instanceof Carbon) {
+            return $value->toDateTimeString();
+        }
+
+        if (is_string($value) && $value !== '') {
+            return Carbon::parse($value)->toDateTimeString();
+        }
+
+        return now()->toDateTimeString();
     }
 }

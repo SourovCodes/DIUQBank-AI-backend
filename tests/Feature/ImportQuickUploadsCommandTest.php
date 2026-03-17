@@ -5,6 +5,7 @@ use App\Jobs\CompressQuickUploadPdf;
 use App\Models\QuickUpload;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -34,8 +35,8 @@ it('imports quick uploads while reusing users and skipping invalid items', funct
                     'media' => [
                         ['file_name' => 'existing.pdf'],
                     ],
-                    'created_at' => '2026-03-01 10:00:00',
-                    'updated_at' => '2026-03-01 10:05:00',
+                    'created_at' => '2026-03-01T10:00:00.000000Z',
+                    'updated_at' => '2026-03-01T10:05:00.000000Z',
                 ],
                 [
                     'id' => 102,
@@ -100,7 +101,9 @@ it('imports quick uploads while reusing users and skipping invalid items', funct
         ->and(User::query()->where('email', 'new@example.com')->value('username'))->toBe('existing_1')
         ->and(QuickUpload::query()->where('user_id', $existingUser->id)->count())->toBe(1)
         ->and(QuickUpload::query()->where('status', QuickUploadStatus::Pending->value)->count())->toBe(3)
-        ->and(Storage::disk('s3')->allFiles('quick-uploads'))->toHaveCount(3);
+        ->and(Storage::disk('s3')->allFiles('quick-uploads'))->toHaveCount(3)
+        ->and(QuickUpload::query()->orderBy('id')->first()?->created_at?->toDateTimeString())
+        ->toBe(Carbon::parse('2026-03-01T10:00:00.000000Z')->toDateTimeString());
 
     Queue::assertPushed(CompressQuickUploadPdf::class, 3);
 });
