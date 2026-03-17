@@ -4,143 +4,129 @@ use App\Enums\QuickUploadStatus;
 use App\Jobs\CompressQuickUploadPdf;
 use App\Models\QuickUpload;
 use App\Models\User;
-use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
 
-it('returns a presigned upload target without creating a quick upload record', function () {
+it('uploads a pdf and creates a quick upload record', function () {
     $user = User::factory()->create();
 
     Sanctum::actingAs($user);
 
-    $disk = \Mockery::mock(FilesystemAdapter::class);
-
-    Storage::shouldReceive('disk')->once()->with('s3')->andReturn($disk);
-
-    $disk->shouldReceive('temporaryUploadUrl')
-        ->once()
-        ->withArgs(function (string $path, $expiration, array $options): bool {
-            expect($path)->toStartWith('quick-uploads/');
-            expect($path)->toEndWith('.pdf');
-            expect($options)->toBe([
-                'ContentType' => 'application/pdf',
-            ]);
-
-            return true;
-        })
-        ->andReturn([
-            'url' => 'https://s3.example.com/presigned-upload',
-            'headers' => [
-                'Content-Type' => 'application/pdf',
-            ],
-        ]);
-
-    $response = $this->postJson('/api/v1/quick-uploads/upload-url', [
-        'file_name' => 'midterm.pdf',
-        'content_type' => 'application/pdf',
-        'file_size' => 2048,
-    ]);
-
-    $response
-        ->assertOk()
-        ->assertJsonPath('data.upload.method', 'PUT')
-        ->assertJsonPath('data.upload.url', 'https://s3.example.com/presigned-upload')
-        ->assertJsonPath('data.upload.content_type', 'application/pdf')
-        ->assertJsonPath('data.upload.file_name', 'midterm.pdf')
-        ->assertJsonPath('data.upload.file_size', 2048);
-
-    expect($response->json('data.pdf_path'))->toStartWith('quick-uploads/'.$user->id.'/');
-    expect(QuickUpload::query()->count())->toBe(0);
-});
-
-it('requires authentication to request a quick upload url', function () {
-    $this->postJson('/api/v1/quick-uploads/upload-url', [
-        'file_name' => 'midterm.pdf',
-        'content_type' => 'application/pdf',
-        'file_size' => 2048,
-    ])->assertUnauthorized();
-});
-
-it('validates that quick upload url requests are pdf files within the allowed size', function () {
-    Sanctum::actingAs(User::factory()->create());
-
-    $this->postJson('/api/v1/quick-uploads/upload-url', [
-        'file_name' => 'midterm.png',
-        'content_type' => 'image/png',
-        'file_size' => 10485761,
-    ])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors([
-            'file_name',
-            'content_type',
-            'file_size',
-        ]);
-});
-
-it('creates a quick upload after confirming the uploaded file exists on s3', function () {
-    $user = User::factory()->create();
-
-    Sanctum::actingAs($user);
     Queue::fake();
+    Storage::fake('s3');
 
-    $disk = \Mockery::mock(FilesystemAdapter::class);
+    $pdf = UploadedFile::fake()->create('midterm.pdf', 256, 'application/pdf');
 
-    Storage::shouldReceive('disk')->once()->with('s3')->andReturn($disk);
-
-    $disk->shouldReceive('exists')
-        ->once()
-        ->with('quick-uploads/'.$user->id.'/completed-upload.pdf')
-        ->andReturn(true);
-
-    $disk->shouldReceive('size')
-        ->once()
-        ->with('quick-uploads/'.$user->id.'/completed-upload.pdf')
-        ->andReturn(4096);
-
-    $response = $this->postJson('/api/v1/quick-uploads', [
-        'pdf_path' => 'quick-uploads/'.$user->id.'/completed-upload.pdf',
+    $response = $this->post('/api/v1/quick-uploads', [
+        'pdf' => $pdf,
+    ], [
+        'Accept' => 'application/json',
     ]);
+
+    $quickUpload = QuickUpload::query()->sole();
 
     $response
         ->assertCreated()
+        ->assertJsonPath('data.id', $quickUpload->id)
         ->assertJsonPath('data.status', QuickUploadStatus::Pending->value)
-        ->assertJsonPath('data.pdf_path', 'quick-uploads/'.$user->id.'/completed-upload.pdf')
-        ->assertJsonPath('data.pdf_size', 4096);
+        ->assertJsonPath('data.reason', null)
+        ->assertJsonPath('data.pdf_path', $quickUpload->pdf_path)
+        ->assertJsonPath('data.pdf_size', $pdf->getSize());
+
+    expect($quickUpload->pdf_path)->toStartWith('quick-uploads/'.$user->id.'/')
+        ->and($quickUpload->pdf_path)->toEndWith('.pdf');
+
+    Storage::disk('s3')->assertExists($quickUpload->pdf_path);
 
     $this->assertDatabaseHas('quick_uploads', [
+        'id' => $quickUpload->id,
         'user_id' => $user->id,
-        'pdf_path' => 'quick-uploads/'.$user->id.'/completed-upload.pdf',
-        'pdf_size' => 4096,
+        'pdf_path' => $quickUpload->pdf_path,
+        'pdf_size' => $pdf->getSize(),
         'status' => QuickUploadStatus::Pending->value,
     ]);
 
-    Queue::assertPushed(CompressQuickUploadPdf::class, function (CompressQuickUploadPdf $job) use ($user): bool {
-        return $job->quickUpload->user_id === $user->id
-            && $job->quickUpload->pdf_path === 'quick-uploads/'.$user->id.'/completed-upload.pdf';
+    Queue::assertPushed(CompressQuickUploadPdf::class, function (CompressQuickUploadPdf $job) use ($quickUpload): bool {
+        return $job->quickUpload->is($quickUpload);
     });
 });
 
-it('rejects quick upload finalization when the file does not exist on s3', function () {
+it('requires authentication to upload a quick upload pdf', function () {
+    $this->post('/api/v1/quick-uploads', [], [
+        'Accept' => 'application/json',
+    ])->assertUnauthorized();
+});
+
+it('validates that quick uploads are pdf files within the allowed size', function () {
+    Sanctum::actingAs(User::factory()->create());
+
+    $this->post('/api/v1/quick-uploads', [
+        'pdf' => UploadedFile::fake()->create('midterm.png', 10_241, 'image/png'),
+    ], [
+        'Accept' => 'application/json',
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['pdf']);
+});
+
+it('returns paginated quick uploads for the authenticated user', function () {
     $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $reviewer = User::factory()->create();
 
     Sanctum::actingAs($user);
 
-    $disk = \Mockery::mock(FilesystemAdapter::class);
+    $oldestUpload = QuickUpload::factory()->create([
+        'user_id' => $user->id,
+        'pdf_path' => 'quick-uploads/'.$user->id.'/oldest.pdf',
+        'created_at' => now()->subDays(2),
+    ]);
 
-    Storage::shouldReceive('disk')->once()->with('s3')->andReturn($disk);
+    $middleUpload = QuickUpload::factory()->manualReviewRequested()->create([
+        'user_id' => $user->id,
+        'pdf_path' => 'quick-uploads/'.$user->id.'/middle.pdf',
+        'created_at' => now()->subDay(),
+    ]);
 
-    $disk->shouldReceive('exists')
-        ->once()
-        ->with('quick-uploads/'.$user->id.'/missing-upload.pdf')
-        ->andReturn(false);
+    $latestUpload = QuickUpload::factory()->manualRejected($reviewer, 'Document quality is too poor to verify.')->create([
+        'user_id' => $user->id,
+        'pdf_path' => 'quick-uploads/'.$user->id.'/latest.pdf',
+        'created_at' => now(),
+    ]);
 
-    $this->postJson('/api/v1/quick-uploads', [
-        'pdf_path' => 'quick-uploads/'.$user->id.'/missing-upload.pdf',
-    ])
+    $otherUsersUpload = QuickUpload::factory()->create([
+        'user_id' => $otherUser->id,
+        'created_at' => now()->addMinute(),
+    ]);
+
+    $response = $this->getJson('/api/v1/quick-uploads?per_page=2');
+
+    $response
+        ->assertSuccessful()
+        ->assertJsonPath('meta.per_page', 2)
+        ->assertJsonCount(2, 'data')
+        ->assertJsonPath('data.0.id', $latestUpload->id)
+        ->assertJsonPath('data.0.status', QuickUploadStatus::ManualRejected->value)
+        ->assertJsonPath('data.0.reason', 'Document quality is too poor to verify.')
+        ->assertJsonPath('data.1.id', $middleUpload->id)
+        ->assertJsonPath('data.1.status', QuickUploadStatus::ManualReviewRequested->value)
+        ->assertJsonMissing(['id' => $oldestUpload->id])
+        ->assertJsonMissing(['id' => $otherUsersUpload->id]);
+});
+
+it('requires authentication to list quick uploads', function () {
+    $this->getJson('/api/v1/quick-uploads')->assertUnauthorized();
+});
+
+it('validates quick upload pagination parameters', function () {
+    Sanctum::actingAs(User::factory()->create());
+
+    $this->getJson('/api/v1/quick-uploads?per_page=0')
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['pdf_path']);
+        ->assertJsonValidationErrors(['per_page']);
 });

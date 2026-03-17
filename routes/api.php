@@ -19,7 +19,7 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/contributors/{contributor}', [ContributorController::class, 'show']);
     Route::post('/auth/google', [GoogleAuthController::class, 'store']);
     Route::post('/auth/logout', [LogoutController::class, 'store'])->middleware('auth:sanctum');
-    Route::post('/quick-uploads/upload-url', [QuickUploadController::class, 'createUploadUrl'])->middleware('auth:sanctum');
+    Route::get('/quick-uploads', [QuickUploadController::class, 'index'])->middleware('auth:sanctum');
     Route::post('/quick-uploads', [QuickUploadController::class, 'store'])->middleware('auth:sanctum');
     Route::get('/questions', [QuestionController::class, 'index']);
     Route::get('/questions/{question}', [QuestionController::class, 'show']);

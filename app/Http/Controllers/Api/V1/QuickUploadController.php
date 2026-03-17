@@ -4,85 +4,52 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\QuickUploadStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\V1\CompleteQuickUploadRequest;
+use App\Http\Requests\Api\V1\IndexQuickUploadRequest;
 use App\Http\Requests\Api\V1\StoreQuickUploadRequest;
+use App\Http\Resources\Api\V1\QuickUploadResource;
 use App\Jobs\CompressQuickUploadPdf;
 use App\Models\QuickUpload;
-use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class QuickUploadController extends Controller
 {
-    public function createUploadUrl(StoreQuickUploadRequest $request): JsonResponse
+    public function index(IndexQuickUploadRequest $request): AnonymousResourceCollection
     {
-        $pdfPath = $this->generatePdfPath($request->user()->getKey());
-        $expiresAt = now()->addMinutes(10);
+        /** @var \App\Models\User $user */
+        $user = $request->user();
 
-        /** @var FilesystemAdapter $disk */
-        $disk = Storage::disk('s3');
+        $quickUploads = QuickUpload::query()
+            ->whereBelongsTo($user, 'uploader')
+            ->latest()
+            ->paginate($request->perPage())
+            ->withQueryString();
 
-        $upload = $disk->temporaryUploadUrl($pdfPath, $expiresAt, [
-            'ContentType' => $request->contentType(),
-        ]);
-
-        return response()->json([
-            'data' => [
-                'pdf_path' => $pdfPath,
-                'upload' => [
-                    'method' => 'PUT',
-                    'url' => $upload['url'],
-                    'headers' => $upload['headers'],
-                    'expires_at' => $expiresAt->toISOString(),
-                    'content_type' => $request->contentType(),
-                    'file_name' => $request->fileName(),
-                    'file_size' => $request->fileSize(),
-                ],
-            ],
-        ]);
+        return QuickUploadResource::collection($quickUploads);
     }
 
-    public function store(CompleteQuickUploadRequest $request): JsonResponse
+    public function store(StoreQuickUploadRequest $request): JsonResponse
     {
-        $pdfPath = $request->pdfPath();
-
-        if (! $this->isOwnedPdfPath($pdfPath, $request->user()->getKey())) {
-            throw ValidationException::withMessages([
-                'pdf_path' => 'The selected upload path is invalid.',
-            ]);
-        }
-
-        /** @var FilesystemAdapter $disk */
-        $disk = Storage::disk('s3');
-
-        if (! $disk->exists($pdfPath)) {
-            throw ValidationException::withMessages([
-                'pdf_path' => 'The uploaded file could not be found on storage.',
-            ]);
-        }
-
-        $pdfSize = $disk->size($pdfPath);
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $pdf = $request->pdf();
+        $pdfPath = $this->storePdf($pdf, $user->getKey());
 
         $quickUpload = QuickUpload::query()->create([
-            'user_id' => $request->user()->getKey(),
+            'user_id' => $user->getKey(),
             'pdf_path' => $pdfPath,
-            'pdf_size' => $pdfSize,
+            'pdf_size' => $pdf->getSize(),
             'status' => QuickUploadStatus::Pending,
         ]);
 
         CompressQuickUploadPdf::dispatch($quickUpload)->afterCommit();
 
-        return response()->json([
-            'data' => [
-                'id' => $quickUpload->getKey(),
-                'status' => $quickUpload->status->value,
-                'pdf_path' => $quickUpload->pdf_path,
-                'pdf_size' => $quickUpload->pdf_size,
-                'created_at' => $quickUpload->created_at?->toISOString(),
-            ],
-        ], 201);
+        return QuickUploadResource::make($quickUpload)
+            ->response()
+            ->setStatusCode(201);
     }
 
     private function generatePdfPath(int|string $userId): string
@@ -90,9 +57,20 @@ class QuickUploadController extends Controller
         return 'quick-uploads/'.$userId.'/'.Str::uuid().'.pdf';
     }
 
-    private function isOwnedPdfPath(string $pdfPath, int|string $userId): bool
+    private function storePdf(UploadedFile $pdf, int|string $userId): string
     {
-        return Str::startsWith($pdfPath, 'quick-uploads/'.$userId.'/')
-            && Str::endsWith(Str::lower($pdfPath), '.pdf');
+        $pdfPath = $this->generatePdfPath($userId);
+
+        $storedPdfPath = $pdf->storeAs(
+            dirname($pdfPath),
+            basename($pdfPath),
+            's3',
+        );
+
+        if (! is_string($storedPdfPath)) {
+            throw new RuntimeException('Unable to store the uploaded PDF.');
+        }
+
+        return $storedPdfPath;
     }
 }
