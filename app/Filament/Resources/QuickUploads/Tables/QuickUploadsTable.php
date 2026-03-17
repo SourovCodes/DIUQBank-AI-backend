@@ -8,7 +8,6 @@ use App\Models\QuickUpload;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -48,6 +47,14 @@ class QuickUploadsTable
                     ->placeholder('No notes yet')
                     ->limit(40)
                     ->toggleable(),
+                TextColumn::make('pdf_size')
+                    ->label('Original PDF Size')
+                    ->state(fn (QuickUpload $record): string => $record->getPdfSizeLabel() ?? 'Unavailable')
+                    ->toggleable(),
+                TextColumn::make('compressed_pdf_size')
+                    ->label('Compressed PDF Size')
+                    ->state(fn (QuickUpload $record): string => $record->getCompressedPdfSizeLabel() ?? 'Not generated')
+                    ->toggleable(),
                 TextColumn::make('created_at')
                     ->label('Submitted')
                     ->dateTime()
@@ -71,42 +78,16 @@ class QuickUploadsTable
                     ->searchable(),
             ])
             ->recordActions([
-                Action::make('openPdf')
-                    ->label('PDF')
+                Action::make('originalPdf')
+                    ->label('Original PDF')
                     ->color('gray')
-                    ->url(fn (QuickUpload $record): ?string => $record->getPdfUrl(), shouldOpenInNewTab: true)
-                    ->visible(fn (QuickUpload $record): bool => filled($record->getPdfUrl())),
-                Action::make('approve')
-                    ->label('Approve')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->visible(fn (QuickUpload $record): bool => $record->status !== QuickUploadStatus::ManualApproved)
-                    ->action(function (QuickUpload $record): void {
-                        $record->forceFill([
-                            'status' => QuickUploadStatus::ManualApproved,
-                            'reviewer_id' => auth()->id(),
-                            'manual_reviewed_at' => now(),
-                            'reason' => null,
-                        ])->save();
-                    }),
-                Action::make('reject')
-                    ->label('Reject')
-                    ->color('danger')
-                    ->fillForm(fn (QuickUpload $record): array => ['reason' => $record->reason])
-                    ->schema([
-                        Textarea::make('reason')
-                            ->label('Rejection Reason')
-                            ->required()
-                            ->rows(4),
-                    ])
-                    ->action(function (QuickUpload $record, array $data): void {
-                        $record->forceFill([
-                            'status' => QuickUploadStatus::ManualRejected,
-                            'reviewer_id' => auth()->id(),
-                            'manual_reviewed_at' => now(),
-                            'reason' => $data['reason'],
-                        ])->save();
-                    }),
+                    ->url(fn (QuickUpload $record): ?string => $record->getOriginalPdfUrl(), shouldOpenInNewTab: true)
+                    ->visible(fn (QuickUpload $record): bool => filled($record->getOriginalPdfUrl())),
+                Action::make('compressedPdf')
+                    ->label('Compressed PDF')
+                    ->color('gray')
+                    ->url(fn (QuickUpload $record): ?string => $record->getCompressedPdfUrl(), shouldOpenInNewTab: true)
+                    ->visible(fn (QuickUpload $record): bool => filled($record->getCompressedPdfUrl())),
                 EditAction::make(),
             ])
             ->toolbarActions([]);

@@ -46,12 +46,18 @@ class QuickUploadInfolist
                             ->label('Compressed PDF Path')
                             ->placeholder('Not generated')
                             ->copyable(),
-                        TextEntry::make('pdf_url')
-                            ->label('PDF')
-                            ->state(fn (QuickUpload $record): string => $record->getPdfUrl() ? 'Open current PDF' : 'Unavailable')
-                            ->url(fn (QuickUpload $record): ?string => $record->getPdfUrl(), shouldOpenInNewTab: true)
+                        TextEntry::make('original_pdf_url')
+                            ->label('Original PDF')
+                            ->state(fn (QuickUpload $record): string => $record->getOriginalPdfUrl() ? 'Open original PDF' : 'Unavailable')
+                            ->url(fn (QuickUpload $record): ?string => $record->getOriginalPdfUrl(), shouldOpenInNewTab: true)
                             ->badge()
                             ->color('primary'),
+                        TextEntry::make('compressed_pdf_url')
+                            ->label('Compressed PDF')
+                            ->state(fn (QuickUpload $record): string => $record->getCompressedPdfUrl() ? 'Open compressed PDF' : 'Not generated')
+                            ->url(fn (QuickUpload $record): ?string => $record->getCompressedPdfUrl(), shouldOpenInNewTab: true)
+                            ->badge()
+                            ->color('gray'),
                         TextEntry::make('ai_processed_at')
                             ->dateTime()
                             ->placeholder('Not processed'),

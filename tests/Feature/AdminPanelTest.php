@@ -1,6 +1,9 @@
 <?php
 
 use App\Enums\QuickUploadStatus;
+use App\Filament\Resources\QuickUploads\Pages\EditQuickUpload;
+use App\Filament\Resources\QuickUploads\Pages\ListQuickUploads;
+use App\Filament\Widgets\ReviewQueueOverview;
 use App\Models\Course;
 use App\Models\Department;
 use App\Models\ExamType;
@@ -9,6 +12,7 @@ use App\Models\QuickUpload;
 use App\Models\Semester;
 use App\Models\Submission;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -143,6 +147,92 @@ it('does not expose resource view pages anymore', function (): void {
     $this->get('/admin/submissions/'.$submission->id)->assertNotFound();
     $this->get('/admin/quick-uploads/'.$quickUpload->id)->assertNotFound();
     $this->get('/admin/users/'.$admin->id)->assertNotFound();
+});
+
+it('renders the review queue widget for quick uploads without relying on a view page route', function (): void {
+    Storage::fake('s3');
+
+    $admin = User::factory()->create();
+
+    config()->set('filament-admin.emails', [$admin->email]);
+
+    $quickUpload = QuickUpload::factory()->manualReviewRequested()->create([
+        'user_id' => $admin->id,
+        'pdf_size' => 2048,
+        'compressed_pdf_path' => 'quick-uploads/compressed.pdf',
+        'compressed_pdf_size' => 1024,
+    ]);
+
+    Filament::setCurrentPanel('admin');
+
+    $this->actingAs($admin);
+
+    Livewire::test(ReviewQueueOverview::class)
+        ->assertSuccessful()
+        ->assertCanSeeTableRecords([$quickUpload])
+        ->assertTableColumnExists('pdf_size')
+        ->assertTableColumnExists('compressed_pdf_size')
+        ->assertActionExists(TestAction::make('originalPdf')->table($quickUpload))
+        ->assertActionExists(TestAction::make('compressedPdf')->table($quickUpload))
+        ->assertActionExists(TestAction::make('open')->table($quickUpload));
+});
+
+it('shows separate original and compressed quick upload pdf actions in the list page', function (): void {
+    Storage::fake('s3');
+
+    $admin = User::factory()->create();
+
+    config()->set('filament-admin.emails', [$admin->email]);
+
+    $quickUpload = QuickUpload::factory()->create([
+        'user_id' => $admin->id,
+        'pdf_size' => 4096,
+        'compressed_pdf_path' => 'quick-uploads/compressed-list.pdf',
+        'compressed_pdf_size' => 2048,
+    ]);
+
+    Filament::setCurrentPanel('admin');
+
+    $this->actingAs($admin);
+
+    Livewire::test(ListQuickUploads::class)
+        ->assertSuccessful()
+        ->assertCanSeeTableRecords([$quickUpload])
+        ->assertTableColumnExists('pdf_size')
+        ->assertTableColumnExists('compressed_pdf_size')
+        ->assertActionExists(TestAction::make('originalPdf')->table($quickUpload))
+        ->assertActionExists(TestAction::make('compressedPdf')->table($quickUpload))
+        ->assertActionExists(TestAction::make('edit')->table($quickUpload))
+        ->assertActionDoesNotExist(TestAction::make('approve')->table($quickUpload))
+        ->assertActionDoesNotExist(TestAction::make('reject')->table($quickUpload));
+});
+
+it('shows both quick upload pdf links and sizes on the edit page without approve or reject actions', function (): void {
+    Storage::fake('s3');
+
+    $admin = User::factory()->create();
+
+    config()->set('filament-admin.emails', [$admin->email]);
+
+    $quickUpload = QuickUpload::factory()->create([
+        'user_id' => $admin->id,
+        'pdf_size' => 6144,
+        'compressed_pdf_path' => 'quick-uploads/compressed-edit.pdf',
+        'compressed_pdf_size' => 3072,
+    ]);
+
+    Filament::setCurrentPanel('admin');
+
+    $this->actingAs($admin);
+
+    Livewire::test(EditQuickUpload::class, ['record' => (string) $quickUpload->getKey()])
+        ->assertSuccessful()
+        ->assertActionExists('openOriginalPdf')
+        ->assertActionExists('openCompressedPdf')
+        ->assertActionDoesNotExist('approve')
+        ->assertActionDoesNotExist('reject')
+        ->assertSee($quickUpload->getPdfSizeLabel())
+        ->assertSee($quickUpload->getCompressedPdfSizeLabel());
 });
 
 it('reports deletion dependencies for parent records', function (): void {

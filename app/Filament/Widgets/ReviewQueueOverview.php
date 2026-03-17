@@ -44,6 +44,12 @@ class ReviewQueueOverview extends TableWidget
                     ->label('Review Notes')
                     ->limit(40)
                     ->placeholder('No notes yet'),
+                TextColumn::make('pdf_size')
+                    ->label('Original PDF Size')
+                    ->state(fn (QuickUpload $record): string => $record->getPdfSizeLabel() ?? 'Unavailable'),
+                TextColumn::make('compressed_pdf_size')
+                    ->label('Compressed PDF Size')
+                    ->state(fn (QuickUpload $record): string => $record->getCompressedPdfSizeLabel() ?? 'Not generated'),
                 TextColumn::make('created_at')
                     ->label('Submitted')
                     ->since()
@@ -51,11 +57,21 @@ class ReviewQueueOverview extends TableWidget
             ])
             ->filters([
             ])
-            ->recordUrl(fn (QuickUpload $record): string => QuickUploadResource::getUrl('view', ['record' => $record]))
+            ->recordUrl(fn (QuickUpload $record): string => QuickUploadResource::getUrl('edit', ['record' => $record]))
             ->recordActions([
+                Action::make('originalPdf')
+                    ->label('Original PDF')
+                    ->color('gray')
+                    ->url(fn (QuickUpload $record): ?string => $record->getOriginalPdfUrl(), shouldOpenInNewTab: true)
+                    ->visible(fn (QuickUpload $record): bool => filled($record->getOriginalPdfUrl())),
+                Action::make('compressedPdf')
+                    ->label('Compressed PDF')
+                    ->color('gray')
+                    ->url(fn (QuickUpload $record): ?string => $record->getCompressedPdfUrl(), shouldOpenInNewTab: true)
+                    ->visible(fn (QuickUpload $record): bool => filled($record->getCompressedPdfUrl())),
                 Action::make('open')
-                    ->label('Open')
-                    ->url(fn (QuickUpload $record): string => QuickUploadResource::getUrl('view', ['record' => $record])),
+                    ->label('Edit')
+                    ->url(fn (QuickUpload $record): string => QuickUploadResource::getUrl('edit', ['record' => $record])),
             ])
             ->paginated([5, 10, 25]);
     }

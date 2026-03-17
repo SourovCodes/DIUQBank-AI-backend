@@ -58,24 +58,19 @@ class QuickUpload extends Model
         return $this->belongsTo(User::class, 'reviewer_id');
     }
 
+    public function getOriginalPdfUrl(): ?string
+    {
+        return $this->getStorageUrl($this->pdf_path);
+    }
+
+    public function getCompressedPdfUrl(): ?string
+    {
+        return $this->getStorageUrl($this->compressed_pdf_path);
+    }
+
     public function getPdfUrl(): ?string
     {
-        $pdfPath = filled($this->compressed_pdf_path)
-            ? $this->compressed_pdf_path
-            : $this->pdf_path;
-
-        if (blank($pdfPath)) {
-            return null;
-        }
-
-        /** @var FilesystemAdapter $disk */
-        $disk = Storage::disk('s3');
-
-        try {
-            return $disk->temporaryUrl($pdfPath, now()->addMinutes(10));
-        } catch (Throwable) {
-            return $disk->url($pdfPath);
-        }
+        return $this->getCompressedPdfUrl() ?? $this->getOriginalPdfUrl();
     }
 
     public function getPdfSizeLabel(): ?string
@@ -90,5 +85,21 @@ class QuickUpload extends Model
         return filled($this->compressed_pdf_size)
             ? Number::fileSize($this->compressed_pdf_size)
             : null;
+    }
+
+    protected function getStorageUrl(?string $path): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        /** @var FilesystemAdapter $disk */
+        $disk = Storage::disk('s3');
+
+        try {
+            return $disk->temporaryUrl($path, now()->addMinutes(10));
+        } catch (Throwable) {
+            return $disk->url($path);
+        }
     }
 }

@@ -52,6 +52,24 @@ class QuickUploadForm
                     ->columnSpanFull()
                     ->columns(2)
                     ->schema([
+                        TextEntry::make('original_pdf_link')
+                            ->label('Original PDF')
+                            ->state(fn (?QuickUpload $record): string => $record?->getOriginalPdfUrl() ? 'Open original PDF' : 'Unavailable')
+                            ->url(fn (?QuickUpload $record): ?string => $record?->getOriginalPdfUrl(), shouldOpenInNewTab: true)
+                            ->badge()
+                            ->color('primary'),
+                        TextEntry::make('pdf_size_display')
+                            ->label('Original PDF Size')
+                            ->state(fn (?QuickUpload $record): string => $record?->getPdfSizeLabel() ?? 'Unavailable'),
+                        TextEntry::make('compressed_pdf_link')
+                            ->label('Compressed PDF')
+                            ->state(fn (?QuickUpload $record): string => $record?->getCompressedPdfUrl() ? 'Open compressed PDF' : 'Not generated')
+                            ->url(fn (?QuickUpload $record): ?string => $record?->getCompressedPdfUrl(), shouldOpenInNewTab: true)
+                            ->badge()
+                            ->color('gray'),
+                        TextEntry::make('compressed_pdf_size_display')
+                            ->label('Compressed PDF Size')
+                            ->state(fn (?QuickUpload $record): string => $record?->getCompressedPdfSizeLabel() ?? 'Not generated'),
                         TextInput::make('pdf_path')
                             ->label('Original PDF Path')
                             ->disabled()
