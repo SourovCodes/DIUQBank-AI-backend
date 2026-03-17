@@ -39,6 +39,11 @@ class ExamType extends Model
         return $this->questions()->exists();
     }
 
+    public function getDeletionDependencyMessage(): string
+    {
+        return 'Delete the questions using this exam type first.';
+    }
+
     public function scopeHasDeletionDependencies(Builder $query): Builder
     {
         return $query->whereHas('questions');

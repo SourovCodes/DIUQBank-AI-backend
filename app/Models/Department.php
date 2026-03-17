@@ -34,6 +34,11 @@ class Department extends Model
         return $this->courses()->exists() || $this->questions()->exists();
     }
 
+    public function getDeletionDependencyMessage(): string
+    {
+        return 'Delete the courses and questions under this department first.';
+    }
+
     public function scopeHasDeletionDependencies(Builder $query): Builder
     {
         return $query->where(function (Builder $query): void {

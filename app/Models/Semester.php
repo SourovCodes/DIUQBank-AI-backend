@@ -28,6 +28,11 @@ class Semester extends Model
         return $this->questions()->exists();
     }
 
+    public function getDeletionDependencyMessage(): string
+    {
+        return 'Delete the questions assigned to this semester first.';
+    }
+
     public function scopeHasDeletionDependencies(Builder $query): Builder
     {
         return $query->whereHas('questions');

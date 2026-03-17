@@ -35,6 +35,11 @@ class Course extends Model
         return $this->questions()->exists();
     }
 
+    public function getDeletionDependencyMessage(): string
+    {
+        return 'Delete the questions under this course first.';
+    }
+
     public function scopeHasDeletionDependencies(Builder $query): Builder
     {
         return $query->whereHas('questions');

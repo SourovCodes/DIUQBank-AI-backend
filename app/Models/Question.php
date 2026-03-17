@@ -58,6 +58,16 @@ class Question extends Model
         return $this->hasMany(Submission::class);
     }
 
+    public function hasDeletionDependencies(): bool
+    {
+        return $this->submissions()->exists();
+    }
+
+    public function getDeletionDependencyMessage(): string
+    {
+        return 'Delete the submissions attached to this question first.';
+    }
+
     /**
      * @param  array<string, mixed>  $filters
      */
