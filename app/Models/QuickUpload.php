@@ -87,6 +87,24 @@ class QuickUpload extends Model
             : null;
     }
 
+    public function getPdfSizeDifference(): ?int
+    {
+        if (blank($this->pdf_size) || blank($this->compressed_pdf_size)) {
+            return null;
+        }
+
+        return max($this->pdf_size - $this->compressed_pdf_size, 0);
+    }
+
+    public function getPdfSizeDifferenceLabel(): ?string
+    {
+        $difference = $this->getPdfSizeDifference();
+
+        return filled($difference)
+            ? Number::fileSize($difference)
+            : null;
+    }
+
     protected function getStorageUrl(?string $path): ?string
     {
         if (blank($path)) {

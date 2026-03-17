@@ -11,6 +11,7 @@ use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class QuickUploadsTable
 {
@@ -50,10 +51,21 @@ class QuickUploadsTable
                 TextColumn::make('pdf_size')
                     ->label('Original PDF Size')
                     ->state(fn (QuickUpload $record): string => $record->getPdfSizeLabel() ?? 'Unavailable')
+                    ->sortable(['pdf_size'])
                     ->toggleable(),
                 TextColumn::make('compressed_pdf_size')
                     ->label('Compressed PDF Size')
                     ->state(fn (QuickUpload $record): string => $record->getCompressedPdfSizeLabel() ?? 'Not generated')
+                    ->sortable(['compressed_pdf_size'])
+                    ->toggleable(),
+                TextColumn::make('pdf_size_difference')
+                    ->label('Difference')
+                    ->state(fn (QuickUpload $record): string => $record->getPdfSizeDifferenceLabel() ?? 'Not generated')
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        return $query
+                            ->orderByRaw('compressed_pdf_size IS NULL')
+                            ->orderByRaw('(pdf_size - compressed_pdf_size) '.$direction);
+                    })
                     ->toggleable(),
                 TextColumn::make('created_at')
                     ->label('Submitted')

@@ -200,11 +200,54 @@ it('shows separate original and compressed quick upload pdf actions in the list 
         ->assertCanSeeTableRecords([$quickUpload])
         ->assertTableColumnExists('pdf_size')
         ->assertTableColumnExists('compressed_pdf_size')
+        ->assertTableColumnExists('pdf_size_difference')
         ->assertActionExists(TestAction::make('originalPdf')->table($quickUpload))
         ->assertActionExists(TestAction::make('compressedPdf')->table($quickUpload))
         ->assertActionExists(TestAction::make('edit')->table($quickUpload))
         ->assertActionDoesNotExist(TestAction::make('approve')->table($quickUpload))
         ->assertActionDoesNotExist(TestAction::make('reject')->table($quickUpload));
+});
+
+it('sorts quick uploads by original size, compressed size, and size difference', function (): void {
+    Storage::fake('s3');
+
+    $admin = User::factory()->create();
+
+    config()->set('filament-admin.emails', [$admin->email]);
+
+    $smallestOriginal = QuickUpload::factory()->create([
+        'user_id' => $admin->id,
+        'pdf_size' => 2_000,
+        'compressed_pdf_path' => 'quick-uploads/compressed-smallest.pdf',
+        'compressed_pdf_size' => 1_400,
+    ]);
+
+    $mediumOriginal = QuickUpload::factory()->create([
+        'user_id' => $admin->id,
+        'pdf_size' => 4_000,
+        'compressed_pdf_path' => 'quick-uploads/compressed-medium.pdf',
+        'compressed_pdf_size' => 1_000,
+    ]);
+
+    $largestOriginal = QuickUpload::factory()->create([
+        'user_id' => $admin->id,
+        'pdf_size' => 8_000,
+        'compressed_pdf_path' => 'quick-uploads/compressed-largest.pdf',
+        'compressed_pdf_size' => 5_000,
+    ]);
+
+    Filament::setCurrentPanel('admin');
+
+    $this->actingAs($admin);
+
+    Livewire::test(ListQuickUploads::class)
+        ->assertSuccessful()
+        ->sortTable('pdf_size')
+        ->assertCanSeeTableRecords([$smallestOriginal, $mediumOriginal, $largestOriginal], inOrder: true)
+        ->sortTable('compressed_pdf_size')
+        ->assertCanSeeTableRecords([$mediumOriginal, $smallestOriginal, $largestOriginal], inOrder: true)
+        ->sortTable('pdf_size_difference', 'desc')
+        ->assertCanSeeTableRecords([$largestOriginal, $mediumOriginal, $smallestOriginal], inOrder: true);
 });
 
 it('shows both quick upload pdf links and sizes on the edit page without approve or reject actions', function (): void {
