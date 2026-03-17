@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Auth\Register as RegisterPage;
 use App\Filament\Widgets\ContentOverview;
 use App\Filament\Widgets\ReviewQueueOverview;
 use App\Filament\Widgets\UploadActivityChart;
@@ -30,6 +31,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->registration(RegisterPage::class)
             ->brandName(config('app.name').' Admin')
             ->colors([
                 'primary' => Color::Amber,

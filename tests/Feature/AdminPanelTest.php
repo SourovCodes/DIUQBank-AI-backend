@@ -9,14 +9,43 @@ use App\Models\QuickUpload;
 use App\Models\Semester;
 use App\Models\Submission;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
 it('redirects guests to the admin login page', function (): void {
     $this->get('/admin')
         ->assertRedirect('/admin/login');
+});
+
+it('renders the admin registration page for guests', function (): void {
+    $this->get('/admin/register')
+        ->assertSuccessful();
+});
+
+it('registers an allowlisted admin user through filament', function (): void {
+    config()->set('filament-admin.emails', ['new-admin@example.com']);
+
+    Filament::setCurrentPanel('admin');
+
+    Livewire::test(\App\Filament\Auth\Register::class)
+        ->set('data.name', 'New Admin')
+        ->set('data.username', 'new_admin')
+        ->set('data.email', 'new-admin@example.com')
+        ->set('data.password', 'password')
+        ->set('data.passwordConfirmation', 'password')
+        ->call('register')
+        ->assertHasNoErrors()
+        ->assertRedirect('/admin');
+
+    $user = User::query()->where('email', 'new-admin@example.com')->sole();
+
+    expect($user->username)->toBe('new_admin')
+        ->and($user->email_verified_at)->not->toBeNull()
+        ->and(auth()->id())->toBe($user->id);
 });
 
 it('forbids authenticated users who are not allowlisted', function (): void {
